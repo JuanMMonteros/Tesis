@@ -1,0 +1,70 @@
+close all;
+clear all;
+clc;
+
+% Nombre del archivo CSV
+nombre_archivo = 'time_overview.csv';
+
+% Verificar si el archivo existe
+if ~isfile(nombre_archivo)
+    error('El archivo %s no existe', nombre_archivo);
+end
+
+% Leer datos (usando readmatrix en lugar de csvread)
+datos = csvread(nombre_archivo,2);
+
+t = datos(:, 1); 
+V = datos(:, 2); 
+
+V_max = max(V);
+umbral = 1.05 * V_max;
+
+index_umbral = [];
+i = 1;
+while i <= length(V)
+    if V(i) > umbral
+        index_umbral(end+1) = i;
+        i = i + 100; % Saltearse 5 muestras
+    else
+        i = i + 1;
+    end
+end
+
+deltaT = [];
+desT = [];
+for j = 1:length(index_umbral)-1
+    deltaT(end+1) = t(index_umbral(j+1)) - t(index_umbral(j));
+end
+
+
+maxDes= abs(max(deltaT)-min(deltaT));
+
+% Calcular media y varianza
+if ~isempty(deltaT)
+    promedio = mean(deltaT);
+    varianza = var(deltaT);
+else
+    promedio = NaN;
+    varianza = NaN;
+    warning('No se encontraron puntos por encima del umbral');
+end
+
+% Mostrar resultados
+fprintf('Media de deltaT: %.4f uS\n', promedio);
+fprintf('Varianza de deltaT: %.4f uS\n', varianza);
+fprintf('Desviacion maxima: %.4f uS\n', maxDes);
+
+figure;
+plot(t, V, '-r', 'LineWidth', 2);
+grid on;
+hold on;
+% Marcar los puntos donde se supera el umbral
+plot(t(index_umbral), V(index_umbral), 'bo', 'MarkerSize', 8, 'LineWidth', 2);
+title("Picos de la Señal");
+xlabel('Tiempo(uS)');
+ylabel('V(dBm)');
+legend('Señal', 'Picos detectados');
+
+figure;
+histogram(deltaT);
+
