@@ -69,7 +69,7 @@ max_desviacion = (max(deltaT) - min(deltaT)) * 1e6; % Máxima desviación en µs
 % Estadísticos del PRI
 PRI_promedio = mean(deltaT) * 1e6;  % Promedio en µs
 varianza_PRI = var(deltaT) * 1e12;  % Varianza en µs²
-PRF_medida = 1/PRI_promedio;        % PRF en Hz
+PRF_medida = 1e6/PRI_promedio;        % PRF en Hz
 
 %% 5. VISUALIZACIÓN DE RESULTADOS
 % ---------------------------------------------------------
@@ -122,5 +122,5 @@ fprintf('> PRF medida: %.2f Hz\n', PRF_medida);
 fprintf('> Jitter RMS: %.4f µs\n', jitter_RMS);
 fprintf('> Máxima desviación: %.4f µs\n', max_desviacion);
 fprintf('> Varianza del PRI: %.4f µs²\n', varianza_PRI);
-fprintf('> Error relativo respecto al teórico: %.2f%%\n', ...
-        100*abs(PRI_promedio - PRI_teorico*1e6)/PRI_teorico);
+%fprintf('> Error relativo respecto al teórico: %.6f%%\n', ...
+%       100*abs(PRI_promedio - PRI_teorico*1e6)/PRI_teorico);
