@@ -108,13 +108,7 @@ try:
             print("Formato de respuesta inesperado en DPX Spectrum.")
     except Exception as e:
         print(f"Error en DPX Spectrum: {e}")
-        Hola Iván,
-
-Buenas tardes. ¿Cómo estás?
-
-Me gustó mucho conocer la empresa y el trabajo que están realizando. Me encantaría formar parte de su equipo y aprender de ustedes.
-
-Te quería consultar si existe la posibilidad de realizar una pasantía con ustedes, ya que en los próximos días debo decidir si firmar o no la beca de la Fundación Fulgor y la renovación de mi pasantía con INVAP. Sin embargo, quisiera darle prioridad a la opción de poder colaborar con INDIE, de ser posible
+       
 
     # --- Captura de Time Overview ---
     # Time Overview muestra la amplitud de la señal en el dominio del tiempo a lo largo de 10 ms
