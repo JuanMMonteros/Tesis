@@ -1,0 +1,23 @@
+Tipo,Comando,Parametro,Descripcion,Delay
+Print,,,"--- Capturando DPX Spectrum ---",0
+Print,,,"Configura: Frecuencia 1.3 GHz, Span 40 MHz, Atenuación 10 dB, RBW 1 MHz.",0
+Comando,:DISPlay:GENeral:MEASview:SELect DPSA,,Selecciona la vista DPX Spectrum,0
+VerificarError,:SYSTem:ERRor?,,Verifica errores,0
+Comando,:SENSe:DPSA:CLEar:RESults,,Limpia resultados anteriores,0
+Comando,:SENSe:DPX:PLOT SPECtrum,,Configura modo de espectro,0
+Comando,:SENSe:DPSA:FREQuency:CENTer,1.3E9,Frecuencia central en 1.3 GHz,0
+Comando,:SENSe:DPSA:FREQuency:SPAN,40E6,Span de 40 MHz,0
+Comando,:INPut:ATTenuation,10,Atenuación de entrada en 10 dB,0
+Comando,:INPut:PREamp,ON,Activa el preamplificador,0
+Comando,:SENSe:DPSA:BANDwidth:RESolution,1E6,RBW en 1 MHz,0
+Comando,:TRACe1:DPSA,OFF,Desactiva traza 1,0
+Comando,:TRACe2:DPSA,OFF,Desactiva traza 2,0
+Comando,:TRACe4:DPSA,OFF,Desactiva traza 4,0
+Comando,:TRACe5:DPSA,OFF,Desactiva traza 5,0
+Comando,:TRACe3:DPSA:FUNCtion,AVERage,Configura función de promedio,0
+Comando,:TRACe3:DPSA:AVERage:COUNt,50,Configura 50 mediciones,0
+Comando,:TRACe3:DPSA,ON,Activa traza 3,0
+VerificarError,:SYSTem:ERRor?,,Verifica errores finales,0
+Comando,:INITiate:IMMediate,,Inicia medición,0
+Espera,,90,Espera 90 segundos,90
+VerificarOPC,*OPC?,,Verifica operación completada,0
