@@ -1,0 +1,9 @@
+Tipo,Comando,Parametro,Descripcion,Delay
+Print,,,"--- Capturando Phase vs Time ---",0
+Print,,,"Configurando: Frecuencia Central 1.3E9, SPAN 40E6.",0
+Comando,:DISPlay:GENeral:MEASview:NEW PHVTime,,Selecciona la vista fase vs tiempo,0
+Comando,:SENSe:PHVTime:FREQuency:CENTer,1.3E9,Establece frecuencia central,0
+Comando,:SENSe:PHVTime:SPAN,40E6,SPAN de 40MHz,0
+Comando,:SENSe:PHVTime:MAXTracepoints,ONEK,Numero de puntos 1000,0
+Comando,:INITiate:IMMediate,,Inicia la medición,0
+VerificarOPC,*OPC?,,Verifica que la operación haya terminado,0
