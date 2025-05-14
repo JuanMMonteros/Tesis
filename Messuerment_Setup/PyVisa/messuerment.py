@@ -7,15 +7,16 @@ import struct  # Para desempaquetar datos binarios recibidos del instrumento
 import time  # Para agregar retrasos entre comandos
 import argparse  #para parsear argumentos
 import os        #para crear directorios
+import datetime  # Para obtener la fecha y hora actual
 
-def Ejemplo_funcion(instr,directorio,plot):
-    print(f"Ejecutando funcion... {directorio}")
+# --- Importación de funciones views ---
+from views import Ejemplo_funcion
 
-# Lista de views con sus parámetros
+# --- Lista de views con sus parámetros ---
 # Cada view tiene un nombre, estado, número de repeticiones, directorio y función a ejecutar
 views = [
-    {"name": "DPX", "state": True, "repet": 5,"dir":"results/dir1","plot":False,"executed":1,"funtion":Ejemplo_funcion},
-    {"name": "TIME", "state": True, "repet": 3,"dir":"results/dir2","plot":False,"executed":1,"funtion":Ejemplo_funcion},
+    {"name": "DPX", "state": True, "repet": 5,"plot":False,"dir":"results/dir1","executed":1,"funtion":Ejemplo_funcion},
+    {"name": "TIME", "state": True, "repet": 3,"plot":False,"dir":"results/dir2","executed":1,"funtion":Ejemplo_funcion},
 ]
 
 
@@ -23,16 +24,29 @@ views = [
 parser = argparse.ArgumentParser(description="Mediciones automaticas con PyVISA en Tecktronix RSA6114A")
 # Agregar argumentos
 parser.add_argument('-ip', type=str, default="192.168.1.67", help="Dirección IP")
+parser.add_argument('-case', type=str, default="none", help="Ejecutar caso unico Ejemplo: -case DPX")
 parser.add_argument('-l', action='store_true', help="Listar los parámetros de ejecución")
 # Parsear los argumentos
 args = parser.parse_args()
 # Asignar los valores
 ip = args.ip
 
+# si se asigna un case solo se ejecuta ese caso una ves 
+if(args.case != "none"):
+    for view in views:
+        if(view["name"]!= args.case):
+            view["state"] = False
+        view["repet"] = 1
 
-# --- Configuración inicial de la conexión al instrumento ---
-rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
-instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
+
+
+#Función para guardar los logs en un archivo
+def logger(message):
+    log_file_path = os.path.join("results","mediciones_log.txt")#log de mediciones
+    # Guardar en un archivo de texto
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(log_file_path, "a") as log_file:
+        log_file.write(f"[{timestamp}] {message}\n")
 
 
 # Comando para el instrumento
@@ -76,23 +90,28 @@ try:
     if not(args.l): #si se usa el flag -l solo se lista los parametros
         # Crear directorios si no existen
         print("Creando directorios...")
-        for directory in views:
-            if not os.path.exists(directory["dir"]):
-                os.makedirs(directory["dir"])
-                print(f"Directorio '{directory["dir"]}' creado.")
+        for dir in views:
+            if not os.path.exists(dir["dir"]):
+                os.makedirs(dir["dir"])
+                print(f"Directorio '{dir["dir"]}' creado.")
             else:
-                print(f"Directorio '{directory["dir"]}' ya existe.")
+                print(f"Directorio '{dir["dir"]}' ya existe.")
         print("_______________________________________________________________\n")
 
         # --- Bloque principal del script ---
         print("Estableciendo conexión...\n")
-        # Establece conexión con el analizador de espectro Tektronix RSA6114A
+        # --- Configuración inicial de la conexión al instrumento ---
+        rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
+        instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
+
+        # --- Establece conexión con el analizador de espectro Tektronix RSA6114A ---
         instrument = rm.open_resource('TCPIP0::' + ip + '::INSTR')  # Conecta al instrumento vía TCP/IP
         instrument.timeout = 120000  # Establece un timeout largo (120 segundos) para operaciones lentas
         send_command(instrument, '*CLS')  # Limpia el estado del instrumento
         send_command(instrument, '*IDN?', wait_opc=False)  # Solicita la identificación del instrumento
         idn = instrument.read().strip()  # Lee y muestra la identificación (por ejemplo, TEKTRONIX,RSA6114A)
         print(f"Identificación del instrumento: {idn}")
+        logger(f"Conexión establecida con instrumento ID:{idn}")
         send_command(instrument, ':INITiate:CONTinuous OFF')  # Desactiva el modo continuo para tomar mediciones únicas
         error_status = instrument.query(':SYSTem:ERRor?').strip()  # Verifica si hay errores después del comando
         print(f"Estado después de :INITiate:CONTinuous OFF: {error_status}")
@@ -108,12 +127,16 @@ try:
                     print(f"Ejecutando mediciones {view['name']}...({view['executed']} de {view['repet']})")
                     view['executed'] += 1
                     repet = True
-                    view["funtion"](instrument,view['dir'],view['plot'])#llamado a la funcion
+                    retorno = view["funtion"](instrument, view['dir'], view['plot'])  # llamado a la función
+
+                    logger((f"Medida: {view['name']} - Número: {view['executed'] - 1}"))
+                    logger(retorno) #loggea el retorno de la función
                     print("_______________________________________________________________\n")
 
 except Exception as e: # Captura cualquier excepción que ocurra durante la ejecución
     print("_______________________________________________________________\n")
     print(f"Error general: {e}")
+    logger(f"Error general: {e}")
     print("_______________________________________________________________\n")
 
 finally:
@@ -122,3 +145,4 @@ finally:
         instrument.close()  # Cierra la conexión al instrumento
     rm.close()  # Cierra el administrador de recursos
     print("Conexión cerrada correctamente.")
+    logger("Conexión cerrada correctamente.\n_______________________________________________________________")
