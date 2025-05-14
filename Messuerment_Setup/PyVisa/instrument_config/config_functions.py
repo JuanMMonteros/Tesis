@@ -177,13 +177,61 @@ def PVT(instrument, directorio, plot):
     # --- Inicialización de variables para almacenar datos ---
     phase_data = np.array([])  # Datos de fase
     time = np.array([])  # vector de tiempo
-    fs = 1
     try:
         if instrument_config(instrument, "config_PVT.csv") == 0: # Llama a la funcion y verifica que no hubo error
         
-        instrument.write(':FETCh:PVHTime?')  # Solicita los datos de phase vs time 
+            instrument.write(':FETCh:PVHTime?')  # Solicita los datos de phase vs time 
+            raw_response = instrument.read_raw()  # Lee los datos en formato binario
+            print(f"Datos crudos de Phase vs Time {raw_response[:50]}...")
+
+            # Procesa los datos binarios recibidos
+            if raw_response[0] == ord('#'):  # Verifica que el formato sea correcto (inicia con #)
+                num_digits = int(chr(raw_response[1]))  # Número de dígitos que indican la longitud de datos
+                num_bytes = int(raw_response[2:2 + num_digits].decode())  # Longitud de los datos en bytes
+                header_length = 2 + num_digits  # Longitud del encabezado
+                data_bytes = raw_response[header_length:header_length + num_bytes]  # Extrae los datos
+                phase_data = struct.unpack(f'<{num_bytes // 4}f', data_bytes)  # Convierte bytes a flotantes
+                phase_data = np.array(phase_data)  # Convierte a arreglo NumPy
+
+                # Genera un arreglo de time# Genera un arreglo de puntos temporales (de 0 a 10 ms)
+                time_points = np.linspace(0, 10e-3, len(phase_data)) * 1e3  # Convierte a milisegundos
+
+                # Busca el próximo número disponible para el archivo
+                i = 1
+                while os.path.exists(os.path.join(directorio, f'PVTime_{i}.csv')):  # Verifica si el archivo ya existe
+                    i += 1  # Incrementa el número
+
+                filename = f'PVTime_{i}.csv'
+                output_path = os.path.join(directorio, filename)
+
+                # Guarda los datos en un archivo CSV
+                pd.DataFrame({'Time (ms)': time_points, 'Phase (º)': phase_data}).to_csv(output_path, index=False)
+                print(f"Datos guardados en '{output_path}'.")
+
+                if plot:
+                    ploter(output_path)
+            else:
+                print("Formato de respuesta inesperado en Phase vs Time.")
+        return f"Medicion Exitosa"
+
+    except Exception as e:
+        return f"Error en Phase vs Time: {e}"  # Solicitar datos
+  
+def TimeOverview(instrument, directorio, plot):
+    # --- Inicialización de variables para almacenar datos ---
+    time_overview_data = np.array([])  # Datos de fase
+    time = np.array([])  # vector de tiempo
+    try:
+        print("\n--- Capturando Time Overview ---")
+        print("Configurando la vista Time Overview...")
+        send_command(instrument, ':DISPlay:PULSe:MEASview:NEW TOVerview')  # Selecciona la vista Time Overview
+        send_command(instrument, ':INITiate:IMMediate', wait_opc=False)  # Inicia la medición
+        opc_response = instrument.query('*OPC?').strip()  # Verifica que la operación haya terminado
+        print(f"Operación completada (Time Overview): {opc_response}")
+
+        instrument.write(':FETCh:TOverview?')  # Solicita los datos de phase vs time 
         raw_response = instrument.read_raw()  # Lee los datos en formato binario
-        print(f"Datos crudos de Phase vs Time {raw_response[:50]}...")
+        print(f"Datos crudos de TimeOverview {raw_response[:50]}...")
 
         # Procesa los datos binarios recibidos
         if raw_response[0] == ord('#'):  # Verifica que el formato sea correcto (inicia con #)
@@ -199,22 +247,22 @@ def PVT(instrument, directorio, plot):
 
             # Busca el próximo número disponible para el archivo
             i = 1
-            while os.path.exists(os.path.join(directorio, f'PVTime_{i}.csv')):  # Verifica si el archivo ya existe
+            while os.path.exists(os.path.join(directorio, f'TimeOverview_{i}.csv')):  # Verifica si el archivo ya existe
                 i += 1  # Incrementa el número
 
-            filename = f'PVTime_{i}.csv'
+            filename = f'TimeOverview_{i}.csv'
             output_path = os.path.join(directorio, filename)
 
             # Guarda los datos en un archivo CSV
-            pd.DataFrame({'Time (ms)': time_points, 'Phase (º)': phase_data}).to_csv(output_path, index=False)
+            pd.DataFrame({'Time (ms)': time_points, 'Amplitud (dBm)': time_overview_data}).to_csv(output_path, index=False)
             print(f"Datos guardados en '{output_path}'.")
 
             if plot:
                 ploter(output_path)
-            else:
-                print("Formato de respuesta inesperado en Phase vs Time.")
+        else:
+            print("Formato de respuesta inesperado en TimeOverview.")
         return f"Medicion Exitosa"
 
     except Exception as e:
         return f"Error en Phase vs Time: {e}"  # Solicitar datos
-    
+
