@@ -1,22 +1,28 @@
 # --- Importación de librerías necesarias ---
 import pyvisa  # Para comunicación con instrumentos vía VISA (Virtual Instrument Software Architecture)
 import numpy as np  # Para operaciones numéricas y manejo de arreglos
-#import matplotlib.pyplot as plt  # Para graficar los resultados
+import matplotlib.pyplot as plt  # Para graficar los resultados
 import struct  # Para desempaquetar datos binarios recibidos del instrumento
-#import pandas as pd  # Para guardar datos en archivos CSV
+import pandas as pd  # Para guardar datos en archivos CSV
 import time  # Para agregar retrasos entre comandos
 import argparse  #para parsear argumentos
 import os        #para crear directorios
 import datetime  # Para obtener la fecha y hora actual
 
 # --- Importación de funciones views ---
-from views import Ejemplo_funcion
+from config_functions import DPX
+from config_functions import PVT
+from config_functions import TimeOverview
+from config_functions import Pulse_Trace
+#from pr import Ejemplo_funcion
 
 # --- Lista de views con sus parámetros ---
 # Cada view tiene un nombre, estado, número de repeticiones, directorio y función a ejecutar
 views = [
-    {"name": "DPX", "state": True, "repet": 5,"plot":False,"dir":"results/dir1","executed":1,"funtion":Ejemplo_funcion},
-    {"name": "TIME", "state": True, "repet": 3,"plot":False,"dir":"results/dir2","executed":1,"funtion":Ejemplo_funcion},
+    {"name": "DPX", "state": True, "repet": 1,"plot":False,"funtion":DPX,"dir":"dir","executed":1},
+    {"name": "PVT", "state": True, "repet": 1,"plot":False,"funtion":PVT,"dir":"dir","executed":1},
+    {"name": "TimeOverview", "state": True, "repet": 1,"plot":False,"funtion":TimeOverview,"dir":"dir","executed":1},
+    {"name": "Pulse_Trace", "state": True, "repet": 1,"plot":False,"funtion":Pulse_Trace,"dir":"dir","executed":1},
 ]
 
 
@@ -24,12 +30,20 @@ views = [
 parser = argparse.ArgumentParser(description="Mediciones automaticas con PyVISA en Tecktronix RSA6114A")
 # Agregar argumentos
 parser.add_argument('-ip', type=str, default="192.168.1.67", help="Dirección IP")
+parser.add_argument('-dir', type=str, default="results", help="Directorio de resultados")
 parser.add_argument('-case', type=str, default="none", help="Ejecutar caso unico Ejemplo: -case DPX")
 parser.add_argument('-l', action='store_true', help="Listar los parámetros de ejecución")
+parser.add_argument('-w', type=int, default="1", help="delay para cada medicion")
 # Parsear los argumentos
 args = parser.parse_args()
 # Asignar los valores
 ip = args.ip
+wait = args.w
+
+# Asignar el directorio de resultados
+for view in views:
+    view["dir"] = args.dir + "/" + view["name"] #asigna el directorio de resultados
+
 
 # si se asigna un case solo se ejecuta ese caso una ves 
 if(args.case != "none"):
@@ -42,7 +56,7 @@ if(args.case != "none"):
 
 #Función para guardar los logs en un archivo
 def logger(message):
-    log_file_path = os.path.join("results","mediciones_log.txt")#log de mediciones
+    log_file_path = os.path.join(args.dir,"mediciones_log.txt")#log de mediciones
     # Guardar en un archivo de texto
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(log_file_path, "a") as log_file:
@@ -60,6 +74,7 @@ def send_command(instr, command, wait_opc=True, delay=0.1):
         delay (float): Retraso en segundos después de enviar el comando.
     """
     print(f"Enviando: {command}")  # Muestra el comando que se está enviando
+    logger(f"Enviando: {command}") 
     instr.write(command)  # Envía el comando al instrumento
     time.sleep(delay)  # Espera un pequeño retraso para que el instrumento procese el comando
     if wait_opc:
@@ -100,6 +115,8 @@ try:
 
         # --- Bloque principal del script ---
         print("Estableciendo conexión...\n")
+        logger("Nueva medición iniciada.\n\n\n")
+
         # --- Configuración inicial de la conexión al instrumento ---
         rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
         instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
@@ -124,13 +141,14 @@ try:
             # Ejecutar las mediciones
             for view in views:
                 if(view["state"] and view["executed"] <= view["repet"]):
+                    time.sleep(wait)  # Espera un tiempo
+                    logger((f"Medida: {view['name']} - Número: {view['executed'] - 1}"))
                     print(f"Ejecutando mediciones {view['name']}...({view['executed']} de {view['repet']})")
                     view['executed'] += 1
                     repet = True
                     retorno = view["funtion"](instrument, view['dir'], view['plot'])  # llamado a la función
 
-                    logger((f"Medida: {view['name']} - Número: {view['executed'] - 1}"))
-                    logger(retorno) #loggea el retorno de la función
+                    logger(f"{retorno}\n_______________________________________________________________") #loggea el retorno de la función
                     print("_______________________________________________________________\n")
 
 except Exception as e: # Captura cualquier excepción que ocurra durante la ejecución
@@ -140,6 +158,7 @@ except Exception as e: # Captura cualquier excepción que ocurra durante la ejec
     print("_______________________________________________________________\n")
 
 finally:
+    time.sleep(wait)  # Espera un tiempo
     # Cierra la conexión al instrumento y libera recursos
     if instrument is not None:
         instrument.close()  # Cierra la conexión al instrumento
