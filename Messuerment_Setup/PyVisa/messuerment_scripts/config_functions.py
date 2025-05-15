@@ -10,6 +10,30 @@ import matplotlib.pyplot as plt
 rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
 instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
 
+# Comando para el instrumento
+def send_command(instr, command, wait_opc=True, delay=0.1):
+    """
+    Envía un comando al instrumento y espera su finalización si wait_opc es True.
+    Args:
+        instr: Objeto de conexión al instrumento.
+        command (str): Comando SCPI a enviar.
+        wait_opc (bool): Si True, espera confirmación de finalización con *OPC?.
+        delay (float): Retraso en segundos después de enviar el comando.
+    """
+    print(f"Enviando: {command}")  # Muestra el comando que se está enviando
+    logger(f"Enviando: {command}") 
+    instr.write(command)  # Envía el comando al instrumento
+    time.sleep(delay)  # Espera un pequeño retraso para que el instrumento procese el comando
+    if wait_opc:
+        opc_response = instr.query('*OPC?')  # Consulta si el comando ha finalizado
+        if opc_response.strip() == '1':
+            print(f"Comando '{command}' completado.")
+        else:
+            print(f"Advertencia: No se recibió confirmación de finalización para '{command}'.")
+    else:
+        print(f"Comando '{command}' enviado sin esperar confirmación.")
+
+
 def ploter(archivo):
 
     # Leer la primera línea como título (correctamente, sin confundirla con encabezado)
