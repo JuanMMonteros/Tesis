@@ -14,6 +14,8 @@ from config_functions import DPX
 from config_functions import PVT
 from config_functions import TimeOverview
 from config_functions import Pulse_Trace
+from config_functions import Spectrum
+from config_functions import frequency
 #from pr import Ejemplo_funcion
 
 # --- Lista de views con sus parámetros ---
@@ -23,6 +25,8 @@ views = [
     {"name": "PVT", "state": True, "repet": 1,"plot":False,"funtion":PVT,"dir":"dir","executed":1},
     {"name": "TimeOverview", "state": True, "repet": 1,"plot":False,"funtion":TimeOverview,"dir":"dir","executed":1},
     {"name": "Pulse_Trace", "state": True, "repet": 1,"plot":False,"funtion":Pulse_Trace,"dir":"dir","executed":1},
+    {"name": "Spectrum", "state": True, "repet": 1,"plot":False,"funtion":Spectrum,"dir":"dir","executed":1},
+    {"name": "frequency", "state": True, "repet": 1,"plot":False,"funtion":frequency,"dir":"dir","executed":1},
 ]
 
 
