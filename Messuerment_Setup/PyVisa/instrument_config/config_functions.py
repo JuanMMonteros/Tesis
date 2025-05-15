@@ -33,26 +33,20 @@ def ploter(archivo):
     plt.tight_layout()
     plt.show()  
 
+from messuerment import send_command #esto es para tener loggeo de comandos 
 # Función para enviar comandos al instrumento y verificar su ejecución
-def send_command(instr, command, wait_opc=True, delay=0.1):
-    """
-    Args:
-        instr: Objeto de conexión al instrumento.
-        command (str): Comando SCPI a enviar.
-        wait_opc (bool): Si True, espera confirmación de finalización con *OPC?.
-        delay (float): Retraso en segundos después de enviar el comando.
-    """
-    print(f"Enviando: {command}")  # Muestra el comando que se está enviando
-    instr.write(command)  # Envía el comando al instrumento
-    time.sleep(delay)  # Espera un pequeño retraso para que el instrumento procese el comando
-    if wait_opc:
-        opc_response = instr.query('*OPC?')  # Consulta si el comando ha finalizado
-        if opc_response.strip() == '1':
-            print(f"Comando '{command}' completado.")
-        else:
-            print(f"Advertencia: No se recibió confirmación de finalización para '{command}'.")
-    else:
-        print(f"Comando '{command}' enviado sin esperar confirmación.")
+# def send_command(instr, command, wait_opc=True, delay=0.1):
+#     print(f"Enviando: {command}")  # Muestra el comando que se está enviando
+#     instr.write(command)  # Envía el comando al instrumento
+#     time.sleep(delay)  # Espera un pequeño retraso para que el instrumento procese el comando
+#     if wait_opc:
+#         opc_response = instr.query('*OPC?')  # Consulta si el comando ha finalizado
+#         if opc_response.strip() == '1':
+#             print(f"Comando '{command}' completado.")
+#         else:
+#             print(f"Advertencia: No se recibió confirmación de finalización para '{command}'.")
+#     else:
+#         print(f"Comando '{command}' enviado sin esperar confirmación.")
 
 def instrument_config(instrument, csv_file):
     """
@@ -308,7 +302,7 @@ def Pulse_Trace(instrument, directorio, plot):
                 
                 # Busca el próximo número disponible para el archivo
                 i = 1
-                while os.path.exists(os.path.join(directorio, f'TimeOverview_{i}.csv')):  # Verifica si el archivo ya existe
+                while os.path.exists(os.path.join(directorio, f'PulseTrace_{i}.csv')):  # Verifica si el archivo ya existe
                     i += 1  # Incrementa el número
 
                 filename = f'PulseTrace_{i}.csv'
