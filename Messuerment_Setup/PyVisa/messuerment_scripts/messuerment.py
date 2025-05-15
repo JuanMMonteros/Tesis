@@ -10,6 +10,7 @@ import os        #para crear directorios
 import datetime  # Para obtener la fecha y hora actual
 
 # --- Importación de funciones views ---
+from config_functions import logger
 from config_functions import send_command
 from config_functions import DPX
 from config_functions import PVT
@@ -45,6 +46,10 @@ args = parser.parse_args()
 ip = args.ip
 wait = args.w
 
+# --- Configuración inicial de la conexión al instrumento ---
+rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
+instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
+
 # Asignar el directorio de resultados
 for view in views:
     view["dir"] = args.dir + "/" + view["name"] #asigna el directorio de resultados
@@ -57,15 +62,6 @@ if(args.case != "none"):
             view["state"] = False
         view["repet"] = 1
 
-
-
-#Función para guardar los logs en un archivo
-def logger(message):
-    log_file_path = os.path.join(args.dir,"mediciones_log.txt")#log de mediciones
-    # Guardar en un archivo de texto
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(log_file_path, "a") as log_file:
-        log_file.write(f"[{timestamp}] {message}\n")
 
 
 # Mostrar los valores a ejecutar
@@ -98,10 +94,6 @@ try:
         print("Estableciendo conexión...\n")
         logger("Nueva medición iniciada.\n\n\n")
 
-        # --- Configuración inicial de la conexión al instrumento ---
-        rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
-        instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
-
         # --- Establece conexión con el analizador de espectro Tektronix RSA6114A ---
         instrument = rm.open_resource('TCPIP0::' + ip + '::INSTR')  # Conecta al instrumento vía TCP/IP
         instrument.timeout = 120000  # Establece un timeout largo (120 segundos) para operaciones lentas
@@ -130,7 +122,7 @@ try:
                     retorno = view["funtion"](instrument, view['dir'], view['plot'])  # llamado a la función
 
                     logger(f"{retorno}\n_______________________________________________________________") #loggea el retorno de la función
-                    print("_______________________________________________________________\n")
+                    print(f"{retorno}\n_______________________________________________________________\n")
 
 except Exception as e: # Captura cualquier excepción que ocurra durante la ejecución
     print("_______________________________________________________________\n")
