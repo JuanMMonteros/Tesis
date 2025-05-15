@@ -123,7 +123,48 @@ def instrument_config(instrument, csv_file):
         print(f"Error al procesar el archivo de configuración: {e}")
         return 1
 
+def Spectrum(instrument, directorio, plot=False):
+    # --- Inicialización de variables para almacenar datos ---
+    spectrum_data = np.array([])  # Datos de amplitud del espectro (DPX Spectrum)
+    frequency = np.array([])  # Frecuen cias correspondientes al espectro)
+    try:
+        if instrument_config(instrument, "config_spectrum.csv") == 0: # Llama a la funcion y verifica que no hubo error
+            instrument.write(':FETCh:SPECTrum:RESults:TRACe3?')  # Solicita los datos de la traza 3 
+            raw_response = instrument.read_raw()  # Lee los datos en formato binario
+            print(f"Datos crudos de Spectrum: {raw_response[:50]}...")
 
+            # Procesa los datos binarios recibidos
+            if raw_response[0] == ord('#'):  # Verifica que el formato sea correcto (inicia con #)
+                num_digits = int(chr(raw_response[1]))  # Número de dígitos que indican la longitud de datos
+                num_bytes = int(raw_response[2:2 + num_digits].decode())  # Longitud de los datos en bytes
+                header_length = 2 + num_digits  # Longitud del encabezado
+                data_bytes = raw_response[header_length:header_length + num_bytes]  # Extrae los datos
+                spectrum_data = struct.unpack(f'<{num_bytes // 4}f', data_bytes)  # Convierte bytes a flotantes
+                spectrum_data = np.array(spectrum_data)  # Convierte a arreglo NumPy
+
+                # Genera un arreglo de frecuencias correspondiente a los datos (de 1280 MHz a 1320 MHz)
+                frequency = np.linspace(1.3e9 - 20e6, 1.3e9 + 20e6, len(spectrum_data))
+
+                i = 1
+                while os.path.exists(os.path.join(directorio, f'Spectrum_{i}.csv')):  # Verifica si el archivo ya existe
+                    i += 1  # Incrementa el número
+
+                filename = f'Spectrum_{i}.csv'
+                output_path = os.path.join(directorio, filename)
+                # Guarda los datos en un archivo CSV
+                pd.DataFrame({'Frecuencia (Hz)': frequency, 'Amplitud (dBm)': spectrum_data}).to_csv(output_path, index=False)
+                print(f"Datos guardados en '{output_path}'.")
+
+                if plot:
+                    ploter(output_path)
+        else:
+            print("Formato de respuesta inesperado en Spectrum.")
+        
+        return f"Medicion Exitosa"
+
+    except Exception as e:
+        return f"Error en Spectrum: {e}"  # Solicitar datos
+    
 def DPX(instrument, directorio, plot):
     # --- Inicialización de variables para almacenar datos ---
     spectrum_data = np.array([])  # Datos de amplitud del espectro (DPX Spectrum)
