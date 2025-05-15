@@ -10,6 +10,7 @@ import os        #para crear directorios
 import datetime  # Para obtener la fecha y hora actual
 
 # --- Importación de funciones views ---
+from config_functions import send_command
 from config_functions import DPX
 from config_functions import PVT
 from config_functions import TimeOverview
@@ -65,30 +66,6 @@ def logger(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(log_file_path, "a") as log_file:
         log_file.write(f"[{timestamp}] {message}\n")
-
-
-# Comando para el instrumento
-def send_command(instr, command, wait_opc=True, delay=0.1):
-    """
-    Envía un comando al instrumento y espera su finalización si wait_opc es True.
-    Args:
-        instr: Objeto de conexión al instrumento.
-        command (str): Comando SCPI a enviar.
-        wait_opc (bool): Si True, espera confirmación de finalización con *OPC?.
-        delay (float): Retraso en segundos después de enviar el comando.
-    """
-    print(f"Enviando: {command}")  # Muestra el comando que se está enviando
-    logger(f"Enviando: {command}") 
-    instr.write(command)  # Envía el comando al instrumento
-    time.sleep(delay)  # Espera un pequeño retraso para que el instrumento procese el comando
-    if wait_opc:
-        opc_response = instr.query('*OPC?')  # Consulta si el comando ha finalizado
-        if opc_response.strip() == '1':
-            print(f"Comando '{command}' completado.")
-        else:
-            print(f"Advertencia: No se recibió confirmación de finalización para '{command}'.")
-    else:
-        print(f"Comando '{command}' enviado sin esperar confirmación.")
 
 
 # Mostrar los valores a ejecutar
