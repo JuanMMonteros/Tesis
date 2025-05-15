@@ -1,0 +1,17 @@
+Tipo,Comando,Parametro,Descripcion,Delay
+Print,,,"--- Capturando Frequency vs Time ---",0
+Print,,,"Configura: Frecuencia 1.3 GHz, Span 40 MHz, Atenuación 10 dB.",0
+Comando,:DISPlay:GENeral:MEASview:NEW FVTime,,Selecciona la vista Frequency vs Time,0
+VerificarError,:SYSTem:ERRor?,,Verifica errores,0
+Comando,:SENSe:FVTime:CLEar:RESults,,Limpia resultados anteriores,0 
+Comando,:SENSe:FVTime:FREQuency:CENTer,1.3E9,Centro en 1.3 GHz,0 
+Comando,:SENSe:FVTime:FREQuency:SPAN,40E6,Span de 40 MHz,0 
+Comando,:INPut:RF:ATTenuation,10,Atenuación de entrada en 10 dB,0 
+Comando,:INPut:RF:ATTenuation:AUTO,OFF,Desactiva auto-atenuación,0 
+Comando,:INPut:PREamp,ON,Activa preamplificador,0 
+VerificarError,:SYSTem:ERRor?,,Verifica errores,0
+Comando,:INITiate:IMMediate,,Inicia adquisición,0
+VerificarOPC,*OPC?,,Espera fin de configuración,0
+Comando,:FETCh:FVTime?,,Lee la traza Frequency vs Time,0 
+Espera,,10,Espera 90 segundos,90
+VerificarOPC,*OPC?,,Verifica lectura completada,0
