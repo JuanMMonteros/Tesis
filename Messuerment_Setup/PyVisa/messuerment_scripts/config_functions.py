@@ -5,11 +5,23 @@ import pandas as pd  # Para guardar datos en archivos CSV
 import struct  # Para desempaquetar datos binarios recibidos del instrumento
 import numpy as np  # Para operaciones numéricas y manejo de arreglos
 import matplotlib.pyplot as plt
+import argparse  #para parsear argumentos
+import datetime  # Para obtener la fecha y hora actual
+import os        #para crear directorios
 
 # --- Configuración inicial de la conexión al instrumento ---
 rm = pyvisa.ResourceManager()  # Crea un administrador de recursos para manejar conexiones VISA
 instrument = None  # Variable para almacenar la conexión al instrumento (inicialmente None)
 
+
+#Función para guardar los logs en un archivo
+def logger(message):
+    log_file_path = os.path.join(args.dir,"mediciones_log.txt")#log de mediciones
+    # Guardar en un archivo de texto
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(log_file_path, "a") as log_file:
+        log_file.write(f"[{timestamp}] {message}\n")
+        
 # Comando para el instrumento
 def send_command(instr, command, wait_opc=True, delay=0.1):
     """
@@ -57,20 +69,6 @@ def ploter(archivo):
     plt.tight_layout()
     plt.show()  
 
-from messuerment import send_command #esto es para tener loggeo de comandos 
-# Función para enviar comandos al instrumento y verificar su ejecución
-# def send_command(instr, command, wait_opc=True, delay=0.1):
-#     print(f"Enviando: {command}")  # Muestra el comando que se está enviando
-#     instr.write(command)  # Envía el comando al instrumento
-#     time.sleep(delay)  # Espera un pequeño retraso para que el instrumento procese el comando
-#     if wait_opc:
-#         opc_response = instr.query('*OPC?')  # Consulta si el comando ha finalizado
-#         if opc_response.strip() == '1':
-#             print(f"Comando '{command}' completado.")
-#         else:
-#             print(f"Advertencia: No se recibió confirmación de finalización para '{command}'.")
-#     else:
-#         print(f"Comando '{command}' enviado sin esperar confirmación.")
 
 def instrument_config(instrument, csv_file):
     """
@@ -147,7 +145,88 @@ def instrument_config(instrument, csv_file):
         print(f"Error al procesar el archivo de configuración: {e}")
         return 1
 
+def frequency(instrument, directorio, plot=False):
+    # --- Inicialización de variables para almacenar datos ---
+    time_data = np.array([])  # Datos de frecuencia
+    frequency_data = np.array([])  # Datos de amplitud
+    try:
+        if instrument_config(instrument, "config_frequency.csv") == 0: # Llama a la funcion y verifica que no hubo error
+            instrument.write(':FETCh:FVTime?')  # Solicita los datos
+            raw_response = instrument.read_raw()  # Lee los datos en formato binario
+            print(f"Datos crudos de Frequency: {raw_response[:50]}...")
 
+            # Procesa los datos binarios recibidos
+            if raw_response[0] == ord('#'):  # Verifica que el formato sea correcto (inicia con #)
+                num_digits = int(chr(raw_response[1]))  # Número de dígitos que indican la longitud de datos
+                num_bytes = int(raw_response[2:2 + num_digits].decode())  # Longitud de los datos en bytes
+                header_length = 2 + num_digits  # Longitud del encabezado
+                data_bytes = raw_response[header_length:header_length + num_bytes]  # Extrae los datos
+                time_data = struct.unpack(f'<{num_bytes // 4}f', data_bytes)  # Convierte bytes a flotantes
+                time_data = np.array(frequency_data)  # Convierte a arreglo NumPy
+
+                # Genera un arreglo de frecuencias correspondiente a los datos (de 1280 MHz a 1320 MHz)
+                frequency_data = np.linspace(1.3e9 - 20e6, 1.3e9 + 20e6, len(frequency_data))
+
+                i = 1
+                while os.path.exists(os.path.join(directorio, f'Frequency_{i}.csv')):  # Verifica si el archivo ya existe
+                    i += 1  # Incrementa el número
+
+                filename = f'Frequency_{i}.csv'
+                output_path = os.path.join(directorio, filename)
+                # Guarda los datos en un archivo CSV
+                pd.DataFrame({'time (s)': time_data, 'frecuency (Hz)': frequency_data}).to_csv(output_path, index=False)
+                print(f"Datos guardados en '{output_path}'.")
+                if plot:    
+                    ploter(output_path)     
+        else:
+            print("Formato de respuesta inesperado en Frequency.")
+        return f"Medicion Exitosa"
+    except Exception as e:
+        return f"Error en Frequency: {e}"
+
+def Spectrum(instrument, directorio, plot=False):
+    # --- Inicialización de variables para almacenar datos ---
+    spectrum_data = np.array([])  # Datos de amplitud del espectro (DPX Spectrum)
+    frequency = np.array([])  # Frecuen cias correspondientes al espectro)
+    try:
+        if instrument_config(instrument, "config_spectrum.csv") == 0: # Llama a la funcion y verifica que no hubo error
+            instrument.write(':FETCh:SPECTrum:RESults:TRACe3?')  # Solicita los datos de la traza 3 
+            raw_response = instrument.read_raw()  # Lee los datos en formato binario
+            print(f"Datos crudos de Spectrum: {raw_response[:50]}...")
+
+            # Procesa los datos binarios recibidos
+            if raw_response[0] == ord('#'):  # Verifica que el formato sea correcto (inicia con #)
+                num_digits = int(chr(raw_response[1]))  # Número de dígitos que indican la longitud de datos
+                num_bytes = int(raw_response[2:2 + num_digits].decode())  # Longitud de los datos en bytes
+                header_length = 2 + num_digits  # Longitud del encabezado
+                data_bytes = raw_response[header_length:header_length + num_bytes]  # Extrae los datos
+                spectrum_data = struct.unpack(f'<{num_bytes // 4}f', data_bytes)  # Convierte bytes a flotantes
+                spectrum_data = np.array(spectrum_data)  # Convierte a arreglo NumPy
+
+                # Genera un arreglo de frecuencias correspondiente a los datos (de 1280 MHz a 1320 MHz)
+                frequency = np.linspace(1.3e9 - 20e6, 1.3e9 + 20e6, len(spectrum_data))
+
+                i = 1
+                while os.path.exists(os.path.join(directorio, f'Spectrum_{i}.csv')):  # Verifica si el archivo ya existe
+                    i += 1  # Incrementa el número
+
+                filename = f'Spectrum_{i}.csv'
+                output_path = os.path.join(directorio, filename)
+                # Guarda los datos en un archivo CSV
+                pd.DataFrame({'Frecuencia (Hz)': frequency, 'Amplitud (dBm)': spectrum_data}).to_csv(output_path, index=False)
+                print(f"Datos guardados en '{output_path}'.")
+
+                if plot:
+                    ploter(output_path)
+        else:
+            print("Formato de respuesta inesperado en Spectrum.")
+        
+        return f"Medicion Exitosa"
+
+    except Exception as e:
+        return f"Error en Spectrum: {e}"  # Solicitar datos
+    
+    
 def DPX(instrument, directorio, plot):
     # --- Inicialización de variables para almacenar datos ---
     spectrum_data = np.array([])  # Datos de amplitud del espectro (DPX Spectrum)
