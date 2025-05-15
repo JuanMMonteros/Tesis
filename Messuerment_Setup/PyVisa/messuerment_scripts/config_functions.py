@@ -319,8 +319,8 @@ def Pulse_Trace(instrument, directorio, plot):
                 pulse_data = np.array([])
                 time = np.array([])
 
-            else:
-                print("Formato de respuesta inesperado en Pulse Trace.")
+        else:
+            print("Formato de respuesta inesperado en Pulse Trace.")
         return f"Medicion Exitosa"
 
     except Exception as e:
