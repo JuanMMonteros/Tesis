@@ -11,7 +11,5 @@ Comando,:INPut:RF:ATTenuation:AUTO,OFF,Desactiva auto-atenuación,0
 Comando,:INPut:PREamp,ON,Activa preamplificador,0 
 VerificarError,:SYSTem:ERRor?,,Verifica errores,0
 Comando,:INITiate:IMMediate,,Inicia adquisición,0
-VerificarOPC,*OPC?,,Espera fin de configuración,0
-Comando,:FETCh:FVTime?,,Lee la traza Frequency vs Time,0 
-Espera,,10,Espera 90 segundos,90
+Comando,*WAI,,,0
 VerificarOPC,*OPC?,,Verifica lectura completada,0

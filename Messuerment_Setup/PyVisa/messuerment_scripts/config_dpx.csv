@@ -19,5 +19,5 @@ Comando,:TRACe3:DPSA:AVERage:COUNt,50,Configura 50 mediciones,0
 Comando,:TRACe3:DPSA,ON,Activa traza 3,0
 VerificarError,:SYSTem:ERRor?,,Verifica errores finales,0
 Comando,:INITiate:IMMediate,,Inicia medición,0
-Espera,,90,Espera 90 segundos,90
+Comando,*WAI,,,0
 VerificarOPC,*OPC?,,Verifica operación completada,0
