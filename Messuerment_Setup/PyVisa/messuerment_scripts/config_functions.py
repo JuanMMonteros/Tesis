@@ -1,6 +1,6 @@
 import pyvisa  # Para comunicación con instrumentos vía VISA
 import time  # Para agregar retrasos entre comandos
-import sys
+#import sys
 import pandas as pd  # Para guardar datos en archivos CSV
 import struct  # Para desempaquetar datos binarios recibidos del instrumento
 import numpy as np  # Para operaciones numéricas y manejo de arreglos
@@ -16,7 +16,7 @@ instrument = None  # Variable para almacenar la conexión al instrumento (inicia
 
 #Función para guardar los logs en un archivo
 def logger(message):
-    log_file_path = os.path.join(args.dir,"mediciones_log.txt")#log de mediciones
+    log_file_path = os.path.join("results","mediciones_log.txt")#log de mediciones
     # Guardar en un archivo de texto
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(log_file_path, "a") as log_file:
@@ -161,11 +161,11 @@ def frequency(instrument, directorio, plot=False):
                 num_bytes = int(raw_response[2:2 + num_digits].decode())  # Longitud de los datos en bytes
                 header_length = 2 + num_digits  # Longitud del encabezado
                 data_bytes = raw_response[header_length:header_length + num_bytes]  # Extrae los datos
-                time_data = struct.unpack(f'<{num_bytes // 4}f', data_bytes)  # Convierte bytes a flotantes
-                time_data = np.array(frequency_data)  # Convierte a arreglo NumPy
+                frequency_data = struct.unpack(f'<{num_bytes // 4}f', data_bytes)  # Convierte bytes a flotantes
+                frequency_data = np.array(frequency_data)  # Convierte a arreglo NumPy
 
                 # Genera un arreglo de frecuencias correspondiente a los datos (de 1280 MHz a 1320 MHz)
-                frequency_data = np.linspace(1.3e9 - 20e6, 1.3e9 + 20e6, len(frequency_data))
+                time_data = np.linspace(0, 10e-3, len(frequency_data)) * 1e3
 
                 i = 1
                 while os.path.exists(os.path.join(directorio, f'Frequency_{i}.csv')):  # Verifica si el archivo ya existe
@@ -174,7 +174,7 @@ def frequency(instrument, directorio, plot=False):
                 filename = f'Frequency_{i}.csv'
                 output_path = os.path.join(directorio, filename)
                 # Guarda los datos en un archivo CSV
-                pd.DataFrame({'time (s)': time_data, 'frecuency (Hz)': frequency_data}).to_csv(output_path, index=False)
+                pd.DataFrame({'frecuency (Hz)': frequency_data, 'time (s)': time_data}).to_csv(output_path, index=False)
                 print(f"Datos guardados en '{output_path}'.")
                 if plot:    
                     ploter(output_path)     
@@ -190,7 +190,7 @@ def Spectrum(instrument, directorio, plot=False):
     frequency = np.array([])  # Frecuen cias correspondientes al espectro)
     try:
         if instrument_config(instrument, "config_spectrum.csv") == 0: # Llama a la funcion y verifica que no hubo error
-            instrument.write(':FETCh:SPECTrum:RESults:TRACe3?')  # Solicita los datos de la traza 3 
+            instrument.write(':FETCh:SPECtrum:TRACe1?')  # Solicita los datos de la traza 
             raw_response = instrument.read_raw()  # Lee los datos en formato binario
             print(f"Datos crudos de Spectrum: {raw_response[:50]}...")
 
@@ -277,7 +277,7 @@ def PVT(instrument, directorio, plot):
     try:
         if instrument_config(instrument, "config_PVT.csv") == 0: # Llama a la funcion y verifica que no hubo error
         
-            instrument.write(':FETCh:PVHTime?')  # Solicita los datos de phase vs time 
+            instrument.write(':FETCh:PHVTime?')  # Solicita los datos de phase vs time 
             raw_response = instrument.read_raw()  # Lee los datos en formato binario
             print(f"Datos crudos de Phase vs Time {raw_response[:50]}...")
 
@@ -323,9 +323,8 @@ def TimeOverview(instrument, directorio, plot):
         print("Configurando la vista Time Overview...")
         send_command(instrument, ':DISPlay:PULSe:MEASview:NEW TOVerview')  # Selecciona la vista Time Overview
         send_command(instrument, ':INITiate:IMMediate', wait_opc=False)  # Inicia la medición
-        opc_response = instrument.query('*OPC?').strip()  # Verifica que la operación haya terminado
-        print(f"Operación completada (Time Overview): {opc_response}")
-
+        instrument.write("*WAI")  # Opción 1: espera pasiva
+        
         instrument.write(':FETCh:TOverview?')  # Solicita los datos de phase vs time 
         raw_response = instrument.read_raw()  # Lee los datos en formato binario
         print(f"Datos crudos de TimeOverview {raw_response[:50]}...")
@@ -377,8 +376,8 @@ def Pulse_Trace(instrument, directorio, plot):
         print("Configurando la vista Pulse Trace...")
         send_command(instrument, ':DISPlay:PULSe:MEASview:NEW TRACe')  # Selecciona la vista Pulse Trace
         send_command(instrument, ':INITiate:IMMediate', wait_opc=False)  # Inicia la medición
-        opc_response = instrument.query('*OPC?').strip()  # Verifica que la operación haya terminado
-        print(f"Operación completada (Pulse Trace): {opc_response}")
+        instrument.write("*WAI")  # Opción 1: espera pasiva
+        
 
         instrument.write(':FETCh:PULSe:TRACe?')  # Solicita los datos de phase vs time
         raw_response = instrument.read_raw()  # Lee los datos en formato binario
