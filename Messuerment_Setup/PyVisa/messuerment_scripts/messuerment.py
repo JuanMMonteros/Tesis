@@ -23,12 +23,12 @@ from config_functions import frequency
 # --- Lista de views con sus parámetros ---
 # Cada view tiene un nombre, estado, número de repeticiones, directorio y función a ejecutar
 views = [
-    {"name": "DPX", "state": True, "repet": 1,"plot":False,"funtion":DPX,"dir":"dir","executed":1},
-    {"name": "PVT", "state": True, "repet": 1,"plot":False,"funtion":PVT,"dir":"dir","executed":1},
-    {"name": "TimeOverview", "state": True, "repet": 1,"plot":False,"funtion":TimeOverview,"dir":"dir","executed":1},
-    {"name": "Pulse_Trace", "state": True, "repet": 1,"plot":False,"funtion":Pulse_Trace,"dir":"dir","executed":1},
-    {"name": "Spectrum", "state": True, "repet": 1,"plot":False,"funtion":Spectrum,"dir":"dir","executed":1},
-    {"name": "frequency", "state": True, "repet": 1,"plot":False,"funtion":frequency,"dir":"dir","executed":1},
+    {"name": "DPX", "state": False, "repet": 1,"plot":False,"funtion":DPX,"dir":"dir","executed":1},
+    {"name": "PVT", "state": True, "repet": 10,"plot":False,"funtion":PVT,"dir":"dir","executed":1},
+    {"name": "TimeOverview", "state": False, "repet": 20,"plot":False,"funtion":TimeOverview,"dir":"dir","executed":1},
+    {"name": "Pulse_Trace", "state": False, "repet": 20,"plot":False,"funtion":Pulse_Trace,"dir":"dir","executed":1},
+    {"name": "Spectrum", "state": True, "repet": 10,"plot":False,"funtion":Spectrum,"dir":"dir","executed":1},
+    {"name": "frequency", "state": False, "repet": 20,"plot":False,"funtion":frequency,"dir":"dir","executed":1},
 ]
 
 
@@ -39,7 +39,7 @@ parser.add_argument('-ip', type=str, default="192.168.1.67", help="Dirección IP
 parser.add_argument('-dir', type=str, default="results", help="Directorio de resultados")
 parser.add_argument('-case', type=str, default="none", help="Ejecutar caso unico Ejemplo: -case DPX")
 parser.add_argument('-l', action='store_true', help="Listar los parámetros de ejecución")
-parser.add_argument('-w', type=int, default="1", help="delay para cada medicion")
+parser.add_argument('-w', type=int, default="5", help="delay para cada medicion")
 # Parsear los argumentos
 args = parser.parse_args()
 # Asignar los valores
@@ -85,9 +85,9 @@ try:
         for dir in views:
             if not os.path.exists(dir["dir"]):
                 os.makedirs(dir["dir"])
-                print(f"Directorio '{dir["dir"]}' creado.")
+                print(f"Directorio '{dir['dir']}' creado.")
             else:
-                print(f"Directorio '{dir["dir"]}' ya existe.")
+                print(f"Directorio '{dir['dir']}' ya existe.")
         print("_______________________________________________________________\n")
 
         # --- Bloque principal del script ---
@@ -96,7 +96,7 @@ try:
 
         # --- Establece conexión con el analizador de espectro Tektronix RSA6114A ---
         instrument = rm.open_resource('TCPIP0::' + ip + '::INSTR')  # Conecta al instrumento vía TCP/IP
-        instrument.timeout = 120000  # Establece un timeout largo (120 segundos) para operaciones lentas
+        instrument.timeout = 12000  # Establece un timeout largo (250 segundos) para operaciones lentas
         send_command(instrument, '*CLS')  # Limpia el estado del instrumento
         send_command(instrument, '*IDN?', wait_opc=False)  # Solicita la identificación del instrumento
         idn = instrument.read().strip()  # Lee y muestra la identificación (por ejemplo, TEKTRONIX,RSA6114A)
