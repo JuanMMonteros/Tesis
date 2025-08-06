@@ -1,0 +1,352 @@
+options:
+  parameters:
+    author: ''
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: no_gui
+    hier_block_src_path: '.:'
+    id: chirp_generator
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: hola soy la gui
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: P
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [856, 28.0]
+    rotation: 0
+    state: true
+- name: PRF
+  id: variable
+  parameters:
+    comment: ''
+    value: '500'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [552, 28.0]
+    rotation: 0
+    state: true
+- name: PRI
+  id: variable
+  parameters:
+    comment: ''
+    value: 1/PRF
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [632, 28.0]
+    rotation: 0
+    state: true
+- name: T_chirp
+  id: variable
+  parameters:
+    comment: ''
+    value: 0.5/PRF
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [704, 28.0]
+    rotation: 0
+    state: true
+- name: f_end
+  id: variable
+  parameters:
+    comment: ''
+    value: 34e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [472, 28.0]
+    rotation: 0
+    state: true
+- name: f_start
+  id: variable
+  parameters:
+    comment: ''
+    value: -34e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [376, 28.0]
+    rotation: 0
+    state: true
+- name: fs
+  id: variable
+  parameters:
+    comment: ''
+    value: 100e6
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [776, 28.0]
+    rotation: 0
+    state: enabled
+- name: samples_for_pulse
+  id: variable
+  parameters:
+    comment: ''
+    value: fs*PRI
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [928, 28.0]
+    rotation: 0
+    state: true
+- name: analog_sig_source_x_0
+  id: analog_sig_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: '1'
+    comment: ''
+    freq: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    phase: '0'
+    samp_rate: fs
+    type: complex
+    waveform: analog.GR_COS_WAVE
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [352, 236.0]
+    rotation: 0
+    state: disabled
+- name: bladeRF_sink_1
+  id: bladeRF_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    bias_tee0: 'False'
+    bias_tee1: 'False'
+    bw: 38e6
+    comment: ''
+    dac: '10000'
+    dc_calibration: LPF_TUNING
+    device_id: '0'
+    feature: default
+    fpga_image: ''
+    fpga_reload: 'False'
+    freq: 1.3e9
+    gain0: '20'
+    gain1: '10'
+    if_gain0: '20'
+    if_gain1: '20'
+    in_clk: ONBOARD
+    lpf_mode: disabled
+    maxoutbuf: '0'
+    metadata: 'False'
+    minoutbuf: '0'
+    nchan: '1'
+    out_clk: 'False'
+    ref_clk: 10e6
+    sample_format: 16bit
+    sample_rate: 56e6
+    sampling: internal
+    show_pmic: 'False'
+    smb: '0'
+    tamer: internal
+    trigger0: 'False'
+    trigger1: 'False'
+    trigger_role0: master
+    trigger_role1: master
+    trigger_signal0: J51_1
+    trigger_signal1: J51_1
+    use_dac: 'False'
+    use_ref_clk: 'True'
+    verbosity: verbose
+    xb200: none
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [728, 284.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass Pulse_generator(gr.sync_block):\n\
+      \    def __init__(self, f_start=-100e3, f_end=100e3, t_chirp=0.5e-3, prf=1e3,\
+      \ fs=1e6, potencia=1.0, modo='up'):\n        gr.sync_block.__init__(\n     \
+      \       self,\n            name='Pulse_generator',   \n            in_sig=[],\n\
+      \            out_sig=[np.complex64]\n        )\n        \n        self.f_start\
+      \ = f_start\n        self.f_end = f_end\n        self.t_chirp = t_chirp\n  \
+      \      self.prf = prf\n        self.fs = fs\n        self.potencia = potencia\n\
+      \        self.modo = modo.lower()\n        self.amplitud = np.sqrt(potencia)\n\
+      \n        self.N = 2**32  # tama\xF1o del acumulador de fase (32 bits)\n   \
+      \     self.samples_per_chirp = int(self.t_chirp * self.fs)\n        self.samples_per_pri\
+      \ = int((1 / self.prf) * self.fs)\n\n        # Para modo down invierto f_start\
+      \ y f_end\n        if self.modo == 'down':\n            f1 = self.f_end\n  \
+      \          f2 = self.f_start\n        else:\n            f1 = self.f_start\n\
+      \            f2 = self.f_end\n\n        # Array de FTW en float64 para soportar\
+      \ valores negativos\n        self.ftw_array = np.linspace(\n            f1 *\
+      \ self.N / self.fs,\n            f2 * self.N / self.fs,\n            self.samples_per_chirp\n\
+      \        ).astype(np.float64)\n\n        # Buffer PRI completo\n        self.pri_buffer\
+      \ = np.zeros(self.samples_per_pri, dtype=np.complex64)\n        self._generate_pri_buffer()\n\
+      \n        self.ptr = 0  # puntero circular para salida\n\n    def _generate_pri_buffer(self):\n\
+      \        phase = 0.0\n        for i in range(self.samples_per_chirp):\n    \
+      \        phase = (phase + self.ftw_array[i]) % self.N\n            theta = 2\
+      \ * np.pi * phase / self.N\n            self.pri_buffer[i] = self.amplitud *\
+      \ np.exp(1j * theta)\n        # Silencio en el resto del PRI\n        self.pri_buffer[self.samples_per_chirp:]\
+      \ = 0\n\n    def work(self, input_items, output_items):\n        out = output_items[0]\n\
+      \        noutput = len(out)\n        buffer_len = len(self.pri_buffer)\n\n \
+      \       remaining = buffer_len - self.ptr\n\n        if noutput <= remaining:\n\
+      \            out[:noutput] = self.pri_buffer[self.ptr:self.ptr + noutput]\n\
+      \            self.ptr = (self.ptr + noutput) % buffer_len\n        else:\n \
+      \           out[:remaining] = self.pri_buffer[self.ptr:]\n            wrap =\
+      \ noutput - remaining\n            out[remaining:noutput] = self.pri_buffer[:wrap]\n\
+      \            self.ptr = wrap\n\n        return noutput\n\n\n\n        \n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    f_end: f_end
+    f_start: f_start
+    fs: fs
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    modo: '''down'''
+    potencia: P
+    prf: PRF
+    t_chirp: T_chirp
+  states:
+    _io_cache: ('Pulse_generator', 'Pulse_generator', [('f_start', '-100000.0'), ('f_end',
+      '100000.0'), ('t_chirp', '0.0005'), ('prf', '1000.0'), ('fs', '1000000.0'),
+      ('potencia', '1.0'), ('modo', "'up'")], [], [('0', 'complex', 1)], '', ['f_end',
+      'f_start', 'fs', 'modo', 'potencia', 'prf', 't_chirp'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [424, 364.0]
+    rotation: 0
+    state: enabled
+- name: qtgui_freq_sink_x_0
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'True'
+    average: '1.0'
+    axislabels: 'True'
+    bw: fs
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: f_start
+    fftsize: '32768'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label: Relative Gain
+    label1: ''
+    label10: ''''''
+    label2: ''''''
+    label3: ''''''
+    label4: ''''''
+    label5: ''''''
+    label6: ''''''
+    label7: ''''''
+    label8: ''''''
+    label9: ''''''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '""'
+    nconnections: '1'
+    norm_window: 'False'
+    showports: 'False'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: dB
+    update_time: '0.3'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_RECTANGULAR
+    ymax: '10'
+    ymin: '-140'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [688, 164.0]
+    rotation: 0
+    state: disabled
+
+connections:
+- [analog_sig_source_x_0, '0', bladeRF_sink_1, '0']
+- [analog_sig_source_x_0, '0', qtgui_freq_sink_x_0, '0']
+- [epy_block_0, '0', bladeRF_sink_1, '0']
+- [epy_block_0, '0', qtgui_freq_sink_x_0, '0']
+
+metadata:
+  file_format: 1
+  grc_version: 3.10.4.0
