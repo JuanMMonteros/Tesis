@@ -75,29 +75,3 @@ assert(save_sc16q11('Outputs/my_chirp.bin',sig)==1,"La senal debe ser compleja y
 
 sig_restores = load_sc16q11('Outputs/my_chirp.bin');
 
-assert(sig_restores-sig ==0,"Las dos no son iguales no se esta cargando correctamente elarchivo")
-
-scaleFactor = 2^11;  % Q11 => 11 bits fraccionales
-I = real(sig);
-Q = imag(sig);
-
-% Escalar y limitar al rango de int16
-I_q11 = int16(max(min(I * scaleFactor,  32767), -32768));
-Q_q11 = int16(max(min(Q * scaleFactor,  32767), -32768));
-
-% Intercalar I y Q: [I0, Q0, I1, Q1, ...]
-IQ_interleaved = zeros(2 * length(I_q11), 1, 'int16');
-IQ_interleaved(1:2:end) = I_q11;
-IQ_interleaved(2:2:end) = Q_q11;
-
-% -------------------------------------------------------------
-% Guardar a archivo binario
-% -------------------------------------------------------------
-filename = 'chirp_100us_signal_sc16q11.bin';
-fid = fopen(filename, 'wb');
-fwrite(fid, IQ_interleaved, 'int16');
-fclose(fid);
-
-fprintf('Archivo %s guardado en formato SC16 Q11 (%d muestras complejas)\n', ...
-        filename, length(I_q11));
-

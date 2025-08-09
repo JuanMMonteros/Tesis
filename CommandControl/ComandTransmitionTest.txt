@@ -1,0 +1,17 @@
+set frequency tx 1300M
+set frequency rx 1300M
+set samplerate tx 38M
+set samplerate rx 38M
+set bandwidth tx 38M
+set bandwidth rx 38M
+set txvga1 0
+set txvga2 10
+set gain rx 40
+
+tx config file=chirp.bin format=bin repeat=100 delay=0
+#rx config file=rx_chirp.bin format=bin n=3800
+#set loopback rf_lna1
+#rx start
+tx start
+#tx wait
+#rx wait
