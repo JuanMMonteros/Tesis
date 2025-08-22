@@ -1,16 +1,16 @@
 {
   "frequency": {"tx": "1300M", "rx": "1300M"},
-  "samplerate": {"tx": "38M", "rx": "38M"},
-  "bandwidth": {"tx": "38M", "rx": "38M"},
-  "txvga1": 0,
+  "samplerate": {"tx": "10M", "rx": "38M"},
+  "bandwidth": {"tx": "10M", "rx": "38M"},
+  "txvga1": -10,
   "txvga2": 10,
   "rx_gain": 40,
   "tx": {
-    "config": {"file": "my_chirp.bin", "format": "bin", "repeat": 100, "delay": 0},
+    "config": {"file": "Outputs/my_chirp.bin", "format": "bin", "repeat": 10000, "delay": 0},
     "start": true
   },
   "rx": {
-    "config": {"file": "rx_chirp.bin", "format": "bin", "n": 3800},
+    "config": {"file": "rx_chirp.bin", "format": "bin", "n": 3800000},
     "start": false
   }
 }

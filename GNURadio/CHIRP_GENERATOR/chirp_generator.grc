@@ -85,7 +85,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: 34e6
+    value: 19e6
   states:
     bus_sink: false
     bus_source: false
@@ -97,19 +97,19 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: -34e6
+    value: -19e6
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [376, 28.0]
+    coordinate: [384, 24.0]
     rotation: 0
     state: true
 - name: fs
   id: variable
   parameters:
     comment: ''
-    value: 100e6
+    value: 50e6
   states:
     bus_sink: false
     bus_source: false
@@ -126,7 +126,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [928, 28.0]
+    coordinate: [928, 72.0]
     rotation: 0
     state: true
 - name: analog_sig_source_x_0
@@ -142,6 +142,7 @@ blocks:
     offset: '0'
     phase: '0'
     samp_rate: fs
+    showports: 'False'
     type: complex
     waveform: analog.GR_COS_WAVE
   states:
@@ -158,6 +159,8 @@ blocks:
     alias: ''
     bias_tee0: 'False'
     bias_tee1: 'False'
+    buffers: '16'
+    buflen: '2500'
     bw: 38e6
     comment: ''
     dac: '10000'
@@ -174,13 +177,13 @@ blocks:
     in_clk: ONBOARD
     lpf_mode: disabled
     maxoutbuf: '0'
-    metadata: 'False'
+    metadata: 'True'
     minoutbuf: '0'
     nchan: '1'
     out_clk: 'False'
     ref_clk: 10e6
     sample_format: 16bit
-    sample_rate: 56e6
+    sample_rate: fs
     sampling: internal
     show_pmic: 'False'
     smb: '0'
@@ -200,6 +203,24 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [728, 284.0]
+    rotation: 0
+    state: enabled
+- name: blocks_add_const_vxx_0
+  id: blocks_add_const_vxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    const: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [600, 488.0]
     rotation: 0
     state: enabled
 - name: epy_block_0
@@ -344,9 +365,10 @@ blocks:
 connections:
 - [analog_sig_source_x_0, '0', bladeRF_sink_1, '0']
 - [analog_sig_source_x_0, '0', qtgui_freq_sink_x_0, '0']
-- [epy_block_0, '0', bladeRF_sink_1, '0']
+- [blocks_add_const_vxx_0, '0', bladeRF_sink_1, '0']
+- [epy_block_0, '0', blocks_add_const_vxx_0, '0']
 - [epy_block_0, '0', qtgui_freq_sink_x_0, '0']
 
 metadata:
   file_format: 1
-  grc_version: 3.10.4.0
+  grc_version: 3.10.9.2

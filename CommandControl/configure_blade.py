@@ -12,9 +12,8 @@ def build_commands(cfg: dict) -> list:
         f"set samplerate rx {cfg['samplerate']['rx']}",
         f"set bandwidth tx {cfg['bandwidth']['tx']}",
         f"set bandwidth rx {cfg['bandwidth']['rx']}",
-        f"set txvga1 {cfg['txvga1']}",
-        f"set txvga2 {cfg['txvga2']}",
-        f"set gain rx {cfg['rx_gain']}",
+        f"set gain tx {cfg['txvga1']}",
+        f"set gain tx {cfg['txvga2']}",
     ]
     tx_cfg = cfg.get('tx', {})
     tx_config = tx_cfg.get('config')

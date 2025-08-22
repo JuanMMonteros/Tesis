@@ -6,8 +6,9 @@
 #
 # GNU Radio Python Flow Graph
 # Title: hola soy la gui
-# GNU Radio version: 3.10.4.0
+# GNU Radio version: 3.10.9.2
 
+from gnuradio import blocks
 from gnuradio import gr
 from gnuradio.filter import firdes
 from gnuradio.fft import window
@@ -32,21 +33,23 @@ class chirp_generator(gr.top_block):
         # Variables
         ##################################################
         self.PRF = PRF = 500
-        self.fs = fs = 100e6
+        self.fs = fs = 50e6
         self.PRI = PRI = 1/PRF
         self.samples_for_pulse = samples_for_pulse = fs*PRI
-        self.f_start = f_start = -34e6
-        self.f_end = f_end = 34e6
+        self.f_start = f_start = -19e6
+        self.f_end = f_end = 19e6
         self.T_chirp = T_chirp = 0.5/PRF
         self.P = P = 1
 
         ##################################################
         # Blocks
         ##################################################
+
         self.epy_block_0 = epy_block_0.Pulse_generator(f_start=f_start, f_end=f_end, t_chirp=T_chirp, prf=PRF, fs=fs, potencia=P, modo='down')
+        self.blocks_add_const_vxx_0 = blocks.add_const_cc(0)
         self.bladeRF_sink_1 = bladeRF.sink(
             args="numchan=" + str(1)
-                 + ",metadata=" + 'False'
+                 + ",metadata=" + 'True'
                  + ",bladerf=" +  str('0')
                  + ",verbosity=" + 'verbose'
                  + ",feature=" + 'default'
@@ -55,6 +58,8 @@ class chirp_generator(gr.top_block):
                  + ",fpga-reload=" + 'False'
                  + ",use_ref_clk=" + 'True'
                  + ",ref_clk=" + str(int(10e6))
+                 + ",buflen=" + str(int(2500))
+                 + ",buffers=" + str(int(16))
                  + ",in_clk=" + 'ONBOARD'
                  + ",out_clk=" + str(False)
                  + ",use_dac=" + 'False'
@@ -76,7 +81,7 @@ class chirp_generator(gr.top_block):
 
 
         )
-        self.bladeRF_sink_1.set_sample_rate(56e6)
+        self.bladeRF_sink_1.set_sample_rate(fs)
         self.bladeRF_sink_1.set_center_freq(1.3e9,0)
         self.bladeRF_sink_1.set_bandwidth(38e6,0)
         self.bladeRF_sink_1.set_gain(20, 0)
@@ -86,7 +91,8 @@ class chirp_generator(gr.top_block):
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.epy_block_0, 0), (self.bladeRF_sink_1, 0))
+        self.connect((self.blocks_add_const_vxx_0, 0), (self.bladeRF_sink_1, 0))
+        self.connect((self.epy_block_0, 0), (self.blocks_add_const_vxx_0, 0))
 
 
     def get_PRF(self):
@@ -104,6 +110,7 @@ class chirp_generator(gr.top_block):
     def set_fs(self, fs):
         self.fs = fs
         self.set_samples_for_pulse(self.fs*self.PRI)
+        self.bladeRF_sink_1.set_sample_rate(self.fs)
         self.epy_block_0.fs = self.fs
 
     def get_PRI(self):
