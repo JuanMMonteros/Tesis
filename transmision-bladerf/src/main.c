@@ -76,9 +76,43 @@ int main(void)
     /* Rol SLAVE: espera pulso externo */
     trigger.role = BLADERF_TRIGGER_ROLE_SLAVE;
 
-    status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
-    if (status != 0) {
-        fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
+    /* Pre-cargar la forma de onda en memoria */
+    FILE *f = fopen("my_chirpL.bin", "rb");
+    if (!f) {
+        fprintf(stderr, "No se pudo abrir my_chirpL.bin\n");
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
+
+    if (fseek(f, 0, SEEK_END) != 0) {
+        fprintf(stderr, "No se pudo determinar el tamaño del archivo\n");
+        fclose(f);
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
+    long file_size = ftell(f);
+    if (file_size <= 0 || file_size % (2 * sizeof(int16_t)) != 0) {
+        fprintf(stderr, "Tamaño de archivo inválido\n");
+        fclose(f);
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
+    rewind(f);
+
+    size_t total_samples = file_size / (2 * sizeof(int16_t));
+    int16_t *waveform = malloc(file_size);
+    if (!waveform) {
+        fprintf(stderr, "No se pudo asignar memoria para la forma de onda\n");
+        fclose(f);
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
+
+    size_t read = fread(waveform, 1, file_size, f);
+    fclose(f);
+    if (read != (size_t)file_size) {
+        fprintf(stderr, "Error leyendo my_chirpL.bin\n");
+        free(waveform);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
@@ -87,76 +121,58 @@ int main(void)
     status = bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), true);
     if (status != 0) {
         fprintf(stderr, "Error enabling TX module: %s\n", bladerf_strerror(status));
+        free(waveform);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
 
     printf("Esperando trigger externo para transmitir...\n");
 
-    /* Esperar a que dispare el trigger */
-    bool is_armed = false, has_fired = false, fire_req = false;
-    do {
-        status = bladerf_trigger_state(dev, &trigger,
-                                       &is_armed, &has_fired, &fire_req,
-                                       NULL, NULL);
-        if (status != 0) {
-            fprintf(stderr, "Error consultando estado del trigger: %s\n", bladerf_strerror(status));
-            bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false);
-            bladerf_close(dev);
-            return EXIT_FAILURE;
-        }
-        usleep(10 * 1000); /* 10 ms */
-    } while (is_armed && !has_fired);
-
-    printf("Trigger recibido, iniciando transmisión...\n");
-    printf("Transmission started successfully.\n");
-
-    /* Abrir archivo binario SC16 Q11 (I/Q int16 intercalado) */
-    FILE *f = fopen("my_chirpL.bin", "rb");
-    if (!f) {
-        fprintf(stderr, "No se pudo abrir my_chirpL.bin\n");
-        bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false);
-        bladerf_close(dev);
-        return EXIT_FAILURE;
-    }
-
-    /* Buffer de TX (cada muestra compleja = 2 * int16_t) */
-    const size_t samples_per_buffer = 4096; /* puedes usar TX_SAMPLES_PER_BUF si querés */
-    int16_t *buffer = (int16_t *)malloc(samples_per_buffer * 2 * sizeof(int16_t));
-    if (!buffer) {
-        fprintf(stderr, "No se pudo asignar memoria\n");
-        fclose(f);
-        bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false);
-        bladerf_close(dev);
-        return EXIT_FAILURE;
-    }
-
-    /* Enviar */
-for (int i = 0; i < 1000; i++) {
-    rewind(f);               // vuelve al inicio y limpia EOF
-    size_t samples_read;
-    while ((samples_read = fread(buffer, 2*sizeof(int16_t), samples_per_buffer, f)) > 0) {
-        status = bladerf_sync_tx(dev, buffer, samples_read, NULL, STREAM_TIMEOUT_MS);
-        if (status != 0) {
-            fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
+    /* Transmisión repetida ante cada disparo */
+    const int max_triggers = 1000; /* 0 para infinito */
+    int trigger_count = 0;
+    while (1) {
+        if (max_triggers > 0 && trigger_count >= max_triggers) {
             break;
         }
-    }
-}
 
-    free(buffer);
-    fclose(f);
+        status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
+        if (status != 0) {
+            fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
+            break;
+        }
+
+        bool fired = false;
+        status = bladerf_trigger_wait(dev, &trigger, &fired, STREAM_TIMEOUT_MS);
+        if (status != 0 || !fired) {
+            fprintf(stderr, "Error esperando trigger: %s\n", bladerf_strerror(status));
+            bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+            break;
+        }
+
+        status = bladerf_sync_tx(dev, waveform, total_samples, NULL, STREAM_TIMEOUT_MS);
+        if (status != 0) {
+            fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
+            bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+            break;
+        }
+
+        status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+        if (status != 0) {
+            fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
+            break;
+        }
+
+        trigger_count++;
+    }
 
     printf("Transmisión finalizada.\n");
 
-    /* Desarmar trigger y deshabilitar módulo */
-    status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-    if (status != 0) {
-        fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
-    }
-
+    /* Limpieza final */
+    bladerf_trigger_arm(dev, &trigger, false, 0, 0);
     bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false);
+    free(waveform);
     bladerf_close(dev);
 
-    return EXIT_SUCCESS;
+    return (status == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
