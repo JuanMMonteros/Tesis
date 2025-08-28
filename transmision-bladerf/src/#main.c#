@@ -5,43 +5,12 @@
 #include <libbladeRF.h>
 #include "bladerf_config.h"   // define DEVICE_IDENTIFIER, SAMPLE_RATE, CENTER_FREQUENCY, TX_GAIN
 #include <stdio.h>
-#include <sys/time.h>
-
 
 /* Parámetros de stream síncrono (ajustables) */
 #define TX_NUM_BUFFERS      32
 #define TX_SAMPLES_PER_BUF  8192   /* múltiplo de 1024 va bien */
 #define TX_NUM_XFERS        8
 #define STREAM_TIMEOUT_MS   60000   /* largo si esperás trigger externo */
-
-static uint64_t now_ms(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (uint64_t)tv.tv_sec * 1000ULL + (uint64_t)tv.tv_usec / 1000ULL;
-}
-
-static int trigger_wait_poll(struct bladerf *dev,
-                             struct bladerf_trigger *trig,
-                             bool *fired,
-                             unsigned timeout_ms)
-{
-    int status;
-    bool is_armed = false, has_fired = false, fire_req = false;
-    uint64_t t0 = now_ms();
-    *fired = false;
-
-    for (;;) {
-        status = bladerf_trigger_state(dev, trig,
-                                       &is_armed, &has_fired, &fire_req,
-                                       NULL, NULL);
-        if (status != 0) return status;
-
-        if (has_fired) { *fired = true; return 0; }
-               if (timeout_ms > 0 && (now_ms() - t0) >= timeout_ms) {
-            return BLADERF_ERR_TIMEOUT;
-        }  
-    }
-}
 
 int main(void)
 {
@@ -160,9 +129,13 @@ int main(void)
     printf("Esperando trigger externo para transmitir...\n");
 
     /* Transmisión repetida ante cada disparo */
-    const int max_triggers = 100000; /* 0 para infinito */
+    const int max_triggers = 1000; /* 0 para infinito */
     int trigger_count = 0;
     while (1) {
+        if (max_triggers > 0 && trigger_count >= max_triggers) {
+            break;
+        }
+
         status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
         if (status != 0) {
             fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
@@ -170,16 +143,14 @@ int main(void)
         }
 
         bool fired = false;
-        status = trigger_wait_poll(dev, &trigger, &fired, 0);  // 0 = espera infinita, sin timeout
-
-
+        status = bladerf_trigger_wait(dev, &trigger, &fired, STREAM_TIMEOUT_MS);
         if (status != 0 || !fired) {
             fprintf(stderr, "Error esperando trigger: %s\n", bladerf_strerror(status));
             bladerf_trigger_arm(dev, &trigger, false, 0, 0);
             break;
         }
 
-        status = bladerf_sync_tx(dev, waveform, total_samples, NULL, 0);
+        status = bladerf_sync_tx(dev, waveform, total_samples, NULL, STREAM_TIMEOUT_MS);
         if (status != 0) {
             fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
             bladerf_trigger_arm(dev, &trigger, false, 0, 0);
@@ -191,7 +162,6 @@ int main(void)
             fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
             break;
         }
-        //usleep(1000 * 1000); // 100 ms entre transmisiones
 
         trigger_count++;
     }
