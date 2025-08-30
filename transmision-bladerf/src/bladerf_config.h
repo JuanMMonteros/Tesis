@@ -7,7 +7,7 @@
 #define SAMPLE_RATE 38000000 // 20 MHz
 
 // Define the center frequency for transmission
-#define CENTER_FREQUENCY 150000000 // 915 MHz
+#define CENTER_FREQUENCY 1300000000 
 
 // Define the gain for transmission
 #define TX_GAIN 10 // Gain in dB

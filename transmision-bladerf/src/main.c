@@ -9,10 +9,10 @@
 
 
 /* Parámetros de stream síncrono (ajustables) */
-#define TX_NUM_BUFFERS      32
-#define TX_SAMPLES_PER_BUF  8192   /* múltiplo de 1024 va bien */
-#define TX_NUM_XFERS        8
-#define STREAM_TIMEOUT_MS   60000   /* largo si esperás trigger externo */
+#define TX_NUM_BUFFERS      8
+#define TX_SAMPLES_PER_BUF  512   /* múltiplo de 1024 va bien */
+#define TX_NUM_XFERS        4
+#define STREAM_TIMEOUT_MS   0   /* largo si esperás trigger externo */
 
 static uint64_t now_ms(void) {
     struct timeval tv;
@@ -162,38 +162,50 @@ int main(void)
     /* Transmisión repetida ante cada disparo */
     const int max_triggers = 100000; /* 0 para infinito */
     int trigger_count = 0;
+    bool fired = false;
+    bool dummy_armed, dummy_fired, dummy_req; //del one shot
     while (1) {
         status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
-        if (status != 0) {
-            fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
-            break;
-        }
+        // if (status != 0) {
+        //     fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
+        //     break;
+        // }
 
-        bool fired = false;
+
         status = trigger_wait_poll(dev, &trigger, &fired, 0);  // 0 = espera infinita, sin timeout
 
 
-        if (status != 0 || !fired) {
-            fprintf(stderr, "Error esperando trigger: %s\n", bladerf_strerror(status));
-            bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-            break;
-        }
+        // if (status != 0 || !fired) {
+        //     fprintf(stderr, "Error esperando trigger: %s\n", bladerf_strerror(status));
+        //     bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+        //     break;
+        // }
 
         status = bladerf_sync_tx(dev, waveform, total_samples, NULL, 0);
-        if (status != 0) {
-            fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
-            bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-            break;
-        }
+        // if (status != 0) {
+        //     fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
+        //     bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+        //     break;
+        // }
 
+
+        /* === One-shot: esperar a que el pulso del trigger cambie su estado === */
+        do {
+            bladerf_trigger_state(dev, &trigger,
+                                &dummy_armed, &dummy_fired, &dummy_req,
+                                NULL, NULL);
+            usleep(100);   // espera 2 µs entre consultas
+            //printf("Esperando que baje el trigger\n");
+        } while (dummy_fired);
+        /*Encierro linea agregadas*/
+        //printf("Bajo el trigger\n");
         status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-        if (status != 0) {
-            fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
-            break;
-        }
-        //usleep(1000 * 1000); // 100 ms entre transmisiones
-
-        trigger_count++;
+        // if (status != 0) {
+        //     fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
+        //     break;
+        // }
+        // printf("Transmisión realizada tras trigger %d\n", trigger_count + 1);
+        // trigger_count++;
     }
 
     printf("Transmisión finalizada.\n");
