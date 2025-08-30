@@ -9,6 +9,7 @@ transmision-bladerf
 ├── src
 │   ├── main.c            # Punto de entrada de la aplicación
 │   └── bladerf_config.h  # Configuraciones y definiciones para libbladerf
+│   └── config_override.h # Opcional que permite sobrescribir configuraciones
 ├── bin                   # Contiene .bin con datos chirp
 ├── obj                   # Contiene .o se crea al compilar
 ├── Makefile              # Archivo para compilar el proyecto
@@ -33,12 +34,17 @@ Una vez compilado, puedes ejecutar la aplicación con el siguiente comando:
 ./nombre_del_ejecutable
 ```
 
-Reemplaza `nombre_del_ejecutable` con el nombre que se haya definido en el Makefile.
+o con 
+
+```
+make run
+```
+
+Reemplaza `nombre_del_ejecutable` con el nombre que se haya definido en el Makefile. 
 
 ## Configuración de libbladerf
 
-Asegúrate de que el dispositivo BladeRF esté correctamente conectado y configurado. Puedes modificar los parámetros de transmisión en el archivo `src/bladerf_config.h` según tus necesidades.
-
+Asegúrate de que el dispositivo BladeRF esté correctamente conectado y configurado. Puedes modificar los parámetros de transmisión en el archivo `src/bladerf_config.h` según tus necesidades. También puedes utilizar `src/config_override.h`, un archivo opcional que permite sobrescribir configuraciones durante la compilación.
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si deseas mejorar este proyecto, por favor abre un issue o un pull request.
