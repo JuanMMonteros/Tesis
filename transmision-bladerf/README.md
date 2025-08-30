@@ -9,6 +9,8 @@ transmision-bladerf
 ├── src
 │   ├── main.c            # Punto de entrada de la aplicación
 │   └── bladerf_config.h  # Configuraciones y definiciones para libbladerf
+├── bin                   # Contiene .bin con datos chirp
+├── obj                   # Contiene .o se crea al compilar
 ├── Makefile              # Archivo para compilar el proyecto
 └── README.md             # Documentación del proyecto
 ```
@@ -40,7 +42,3 @@ Asegúrate de que el dispositivo BladeRF esté correctamente conectado y configu
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si deseas mejorar este proyecto, por favor abre un issue o un pull request.
-
-## Licencia
-
-Este proyecto está bajo la Licencia MIT.

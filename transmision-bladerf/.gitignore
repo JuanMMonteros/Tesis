@@ -1,0 +1,21 @@
+# Compilados
+main
+transmision_bladerf
+*.o
+*.out
+*.exe
+
+# Directorio de objetos
+obj/
+
+# Archivos temporales
+*~
+*.swp
+*.bak
+*.tmp
+
+# VS Code: ignora todo 
+.vscode/*
+
+
+

@@ -1,32 +1,38 @@
-# --- Build config ---
-CC       := gcc
-CSTD     := -std=c11
-WARN     := -Wall -Wextra
-CPPFLAGS := -I./src
-CFLAGS   := $(CSTD) $(WARN)
-LDFLAGS  := -L/usr/local/lib         # ajusta si tu lib no está en /usr/local/lib
-LDLIBS   := -lbladeRF                # nombre correcto de la lib
+# Nombre del ejecutable
+TARGET = transmision_bladerf
 
-# Usa pkg-config si está disponible (toma rutas y flags correctos)
-ifeq ($(shell pkg-config --exists libbladeRF && echo yes),yes)
-CPPFLAGS += $(shell pkg-config --cflags libbladeRF)
-LDLIBS   := $(shell pkg-config --libs libbladeRF)
-# (pkg-config ya incluye -lbladeRF y -L...; puedes comentar LDFLAGS de arriba si quieres)
-endif
+# Directorios
+SRC_DIR = src
+OBJ_DIR = obj
 
-SRC   := src/main.c
-OBJ   := $(SRC:.c=.o)
-TARGET:= transmision_bladerf
+# Archivos fuente y objeto
+SRC = $(SRC_DIR)/main.c
+OBJ = $(OBJ_DIR)/main.o
+
+# Compilador y flags
+CC = gcc
+CFLAGS = -Wall -Wextra -O2
+LDFLAGS = -lbladeRF
+
+# Regla por defecto
+all: $(TARGET)
+
+# Compilar el ejecutable
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Compilar archivo objeto
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# ejecuta archivos generados
+run:
+	./$(TARGET)
+
+# Limpiar archivos generados
+clean:
+	rm -rf $(OBJ_DIR) $(TARGET)
 
 .PHONY: all clean
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
-%.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
-clean:
-	rm -f $(OBJ) $(TARGET)
