@@ -2,17 +2,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <libbladeRF.h>
-#include "bladerf_config.h"   // define DEVICE_IDENTIFIER, SAMPLE_RATE, CENTER_FREQUENCY, TX_GAIN
 #include <stdio.h>
-#include <sys/time.h>
+#include <sys/time.h>   
+#include <libbladeRF.h>       // API bladeRF
+#include "bladerf_config.h"   // define configuración bladeRF
 
-
-/* Parámetros de stream síncrono (ajustables) */
-#define TX_NUM_BUFFERS      8
-#define TX_SAMPLES_PER_BUF  512   /* múltiplo de 1024 va bien */
-#define TX_NUM_XFERS        4
-#define STREAM_TIMEOUT_MS   0   /* largo si esperás trigger externo */
 
 static uint64_t now_ms(void) {
     struct timeval tv;
@@ -45,8 +39,8 @@ static int trigger_wait_poll(struct bladerf *dev,
 
 int main(void)
 {
-    struct bladerf *dev = NULL;
-    int status;
+    struct bladerf *dev = NULL; // Device BladeRF
+    int status;                 // Código de estado de funciones bladeRF
 
     /* Abrir dispositivo */
     status = bladerf_open(&dev, DEVICE_IDENTIFIER);
@@ -54,7 +48,7 @@ int main(void)
         fprintf(stderr, "Error opening bladeRF device: %s\n", bladerf_strerror(status));
         return EXIT_FAILURE;
     }
-
+    /*==========================================================*/
     /* Config RF básica */
     unsigned int actual_sr = 0;
     status = bladerf_set_sample_rate(dev, BLADERF_CHANNEL_TX(0), SAMPLE_RATE, &actual_sr);
@@ -91,7 +85,7 @@ int main(void)
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
-
+    /*==========================================================*/
     /* === Configurar trigger externo (mini_exp[1] = J51-1 en xA4) === */
     struct bladerf_trigger trigger;
     status = bladerf_trigger_init(dev,
@@ -107,10 +101,11 @@ int main(void)
     /* Rol SLAVE: espera pulso externo */
     trigger.role = BLADERF_TRIGGER_ROLE_SLAVE;
 
+    /*==========================================================*/
     /* Pre-cargar la forma de onda en memoria */
-    FILE *f = fopen("my_chirpL.bin", "rb");
+    FILE *f = fopen(CHIRP_FILE, "rb");
     if (!f) {
-        fprintf(stderr, "No se pudo abrir my_chirpL.bin\n");
+    fprintf(stderr, "No se pudo abrir %s\n",CHIRP_FILE);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
@@ -142,12 +137,13 @@ int main(void)
     size_t read = fread(waveform, 1, file_size, f);
     fclose(f);
     if (read != (size_t)file_size) {
-        fprintf(stderr, "Error leyendo my_chirpL.bin\n");
+        fprintf(stderr, "Error leyendo %s\n",CHIRP_FILE);
         free(waveform);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
 
+    /*==========================================================*/
     /* Habilitar el módulo TX ANTES de transmitir */
     status = bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), true);
     if (status != 0) {
@@ -158,10 +154,9 @@ int main(void)
     }
 
     printf("Esperando trigger externo para transmitir...\n");
-
+    /*==========================================================*/
+    //START LOOP
     /* Transmisión repetida ante cada disparo */
-    const int max_triggers = 100000; /* 0 para infinito */
-    int trigger_count = 0;
     bool fired = false;
     bool dummy_armed, dummy_fired, dummy_req; //del one shot
     while (1) {
@@ -170,7 +165,6 @@ int main(void)
         //     fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
         //     break;
         // }
-
 
         status = trigger_wait_poll(dev, &trigger, &fired, 0);  // 0 = espera infinita, sin timeout
 
@@ -197,17 +191,17 @@ int main(void)
             usleep(100);   // espera 2 µs entre consultas
             //printf("Esperando que baje el trigger\n");
         } while (dummy_fired);
-        /*Encierro linea agregadas*/
-        //printf("Bajo el trigger\n");
+
         status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
         // if (status != 0) {
         //     fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
         //     break;
         // }
-        // printf("Transmisión realizada tras trigger %d\n", trigger_count + 1);
-        // trigger_count++;
+        // printf("Transmisión realizada tras trigger\n");
     }
-
+    //END LOOP
+    /*==========================================================*/
+    //actualmente no sale nunca del loop (agregar condición de salida luego de probar tiempos)
     printf("Transmisión finalizada.\n");
 
     /* Limpieza final */
