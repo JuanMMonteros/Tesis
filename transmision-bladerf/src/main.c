@@ -7,41 +7,23 @@
 #include <libbladeRF.h>       // API bladeRF
 #include "bladerf_config.h"   // define configuración bladeRF
 
-
-static uint64_t now_ms(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (uint64_t)tv.tv_sec * 1000ULL + (uint64_t)tv.tv_usec / 1000ULL;
-}
-
-static int trigger_wait_poll(struct bladerf *dev,
-                             struct bladerf_trigger *trig,
-                             bool *fired,
-                             unsigned timeout_ms)
-{
-    int status;
-    bool is_armed = false, has_fired = false, fire_req = false;
-    uint64_t t0 = now_ms();
-    *fired = false;
-
-    for (;;) {
-        status = bladerf_trigger_state(dev, trig,
-                                       &is_armed, &has_fired, &fire_req,
-                                       NULL, NULL);
-        if (status != 0) return status;
-
-        if (has_fired) { *fired = true; return 0; }
-               if (timeout_ms > 0 && (now_ms() - t0) >= timeout_ms) {
-            return BLADERF_ERR_TIMEOUT;
-        }  
-    }
-}
-
 int main(void)
 {
     struct bladerf *dev = NULL; // Device BladeRF
     int status;                 // Código de estado de funciones bladeRF
 
+    // Formato de muestras (SC8_Q7 o SC16_Q11)
+    bladerf_format format;
+    #if SAMPLE_BITS == 8
+        typedef int8_t sample_t;
+        format = BLADERF_FORMAT_SC8_Q7;
+    #elif SAMPLE_BITS == 16
+        typedef int16_t sample_t;
+        format = BLADERF_FORMAT_SC16_Q11;
+    #else
+        #error "SAMPLE_BITS debe ser 8 o 16"
+    #endif
+    /*==========================================================*/
     /* Abrir dispositivo */
     status = bladerf_open(&dev, DEVICE_IDENTIFIER);
     if (status != 0) {
@@ -75,7 +57,7 @@ int main(void)
     /* === Inicializar interfaz síncrona TX === */
     status = bladerf_sync_config(dev,
                                  BLADERF_CHANNEL_TX(0),
-                                 BLADERF_FORMAT_SC16_Q11,
+                                 format, //se configura segun SAMPLE_BITS
                                  TX_NUM_BUFFERS,
                                  TX_SAMPLES_PER_BUF,
                                  TX_NUM_XFERS,
@@ -105,7 +87,7 @@ int main(void)
     /* Pre-cargar la forma de onda en memoria */
     FILE *f = fopen(CHIRP_FILE, "rb");
     if (!f) {
-    fprintf(stderr, "No se pudo abrir %s\n",CHIRP_FILE);
+        fprintf(stderr, "No se pudo abrir %s\n", CHIRP_FILE);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
@@ -117,7 +99,7 @@ int main(void)
         return EXIT_FAILURE;
     }
     long file_size = ftell(f);
-    if (file_size <= 0 || file_size % (2 * sizeof(int16_t)) != 0) {
+    if (file_size <= 0 || file_size % (2 * sizeof(sample_t)) != 0) {
         fprintf(stderr, "Tamaño de archivo inválido\n");
         fclose(f);
         bladerf_close(dev);
@@ -125,8 +107,8 @@ int main(void)
     }
     rewind(f);
 
-    size_t total_samples = file_size / (2 * sizeof(int16_t));
-    int16_t *waveform = malloc(file_size);
+    size_t total_samples = file_size / (2 * sizeof(sample_t));
+    sample_t *waveform = malloc(file_size);
     if (!waveform) {
         fprintf(stderr, "No se pudo asignar memoria para la forma de onda\n");
         fclose(f);
@@ -137,7 +119,7 @@ int main(void)
     size_t read = fread(waveform, 1, file_size, f);
     fclose(f);
     if (read != (size_t)file_size) {
-        fprintf(stderr, "Error leyendo %s\n",CHIRP_FILE);
+        fprintf(stderr, "Error leyendo %s\n", CHIRP_FILE);
         free(waveform);
         bladerf_close(dev);
         return EXIT_FAILURE;
@@ -158,46 +140,32 @@ int main(void)
     //START LOOP
     /* Transmisión repetida ante cada disparo */
     bool fired = false;
-    bool dummy_armed, dummy_fired, dummy_req; //del one shot
-    while (1) {
+    while (status == 0) { 
+        //Armar trigger para esperar el pulso externo
         status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
-        // if (status != 0) {
-        //     fprintf(stderr, "Error armando trigger externo: %s\n", bladerf_strerror(status));
-        //     break;
-        // }
 
-        status = trigger_wait_poll(dev, &trigger, &fired, 0);  // 0 = espera infinita, sin timeout
-
-
-        // if (status != 0 || !fired) {
-        //     fprintf(stderr, "Error esperando trigger: %s\n", bladerf_strerror(status));
-        //     bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-        //     break;
-        // }
-
-        status = bladerf_sync_tx(dev, waveform, total_samples, NULL, 0);
-        // if (status != 0) {
-        //     fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
-        //     bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-        //     break;
-        // }
-
-
-        /* === One-shot: esperar a que el pulso del trigger cambie su estado === */
+        //Espera activa (polling) del trigger
         do {
-            bladerf_trigger_state(dev, &trigger,
-                                &dummy_armed, &dummy_fired, &dummy_req,
-                                NULL, NULL);
-            usleep(100);   // espera 2 µs entre consultas
-            //printf("Esperando que baje el trigger\n");
-        } while (dummy_fired);
+            status = bladerf_trigger_state(dev, &trigger,NULL, &fired,NULL,NULL, NULL);
+        } while (!fired && status == 0);
 
+        //Transmitir chirp 
+        status = bladerf_sync_tx(dev, waveform, total_samples, NULL, 0);
+
+        //One-shot: esperar a que el pulso del trigger cambie su estado
+        do {
+            bladerf_trigger_state(dev, &trigger,NULL, &fired,NULL,NULL, NULL);
+        } while (fired && status == 0);
+
+        //Re-armar trigger para la próxima iteración
         status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
-        // if (status != 0) {
-        //     fprintf(stderr, "Error desarmando trigger: %s\n", bladerf_strerror(status));
-        //     break;
-        // }
-        // printf("Transmisión realizada tras trigger\n");
+    }
+
+    if (status != 0) {
+        fprintf(stderr, "Error en loop principal: %s\n", bladerf_strerror(status));
+        free(waveform);
+        bladerf_close(dev);
+        return EXIT_FAILURE;
     }
     //END LOOP
     /*==========================================================*/
