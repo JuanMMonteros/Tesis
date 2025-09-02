@@ -7,7 +7,7 @@
 #define SAMPLE_BITS 16
 
 // Archivo con chirp I/Q (pre-generado)
-#define CHIRP_FILE "/../bin/my_chirpL.bin" 
+#define CHIRP_FILE "./bin/my_chirpL.bin" 
 
 // Define the sample rate for transmission
 #define SAMPLE_RATE 38000000 // 20 MHz
