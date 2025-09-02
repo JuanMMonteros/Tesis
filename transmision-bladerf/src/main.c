@@ -140,13 +140,14 @@ int main(void)
     //START LOOP
     /* Transmisión repetida ante cada disparo */
     bool fired = false;
+    bool is_armed = false;
     while (status == 0) { 
         //Armar trigger para esperar el pulso externo
         status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
 
         //Espera activa (polling) del trigger
         do {
-            status = bladerf_trigger_state(dev, &trigger,NULL, &fired,NULL,NULL, NULL);
+            status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,NULL,NULL, NULL);
         } while (!fired && status == 0);
 
         //Transmitir chirp 
@@ -154,7 +155,7 @@ int main(void)
 
         //One-shot: esperar a que el pulso del trigger cambie su estado
         do {
-            bladerf_trigger_state(dev, &trigger,NULL, &fired,NULL,NULL, NULL);
+            bladerf_trigger_state(dev, &trigger,&is_armed, &fired,NULL,NULL, NULL);
         } while (fired && status == 0);
 
         //Re-armar trigger para la próxima iteración
