@@ -7,7 +7,7 @@
 #define SAMPLE_BITS 16
 
 // Archivo con chirp I/Q (pre-generado)
-#define CHIRP_FILE "bin/my_chirpL.bin" 
+#define CHIRP_FILE "../bin/my_chirpL.bin" 
 
 // Define the sample rate for transmission
 #define SAMPLE_RATE 38000000 // 20 MHz
@@ -22,9 +22,9 @@
 #define DEVICE_IDENTIFIER "*"
 
 /* Parámetros de stream síncrono (ajustables) */
-#define TX_NUM_BUFFERS      8
-#define TX_SAMPLES_PER_BUF  512   /* múltiplo de 1024 va bien */
-#define TX_NUM_XFERS        4
+#define TX_NUM_BUFFERS      2
+#define TX_SAMPLES_PER_BUF  1024   /* múltiplo de 1024 va bien */
+#define TX_NUM_XFERS        1
 #define STREAM_TIMEOUT_MS   0   /* largo si esperás trigger externo */
 
 /*==========================================================*/
