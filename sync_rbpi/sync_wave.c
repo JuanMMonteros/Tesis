@@ -9,7 +9,7 @@
 #include <gpiod.h>
 
 #define GPIO_CHIP "/dev/gpiochip0"  // Chip principal
-#define GPIO_LINE 17                // Pin GPIO17 (BCM)
+#define GPIO_LINE 21                // Pin GPIO17 (BCM)
 #define PERIOD_NS 2000000L          // 2 ms en nanosegundos
 
 static int running = 1;
