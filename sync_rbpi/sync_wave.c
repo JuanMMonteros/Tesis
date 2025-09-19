@@ -4,12 +4,11 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
-#include <pthread.h>
 #include <sched.h>
 #include <gpiod.h>
 
 #define GPIO_CHIP "/dev/gpiochip0"  // Chip principal
-#define GPIO_LINE 21                // Pin GPIO17 (BCM)
+#define GPIO_LINE 17                // GPIO17 (BCM numbering)
 #define PERIOD_NS 2000000L          // 2 ms en nanosegundos
 
 static int running = 1;
@@ -19,7 +18,7 @@ void handle_sigint(int sig) {
 }
 
 int main() {
-    // Fijar afinidad a CPU 0
+    // Afinidad CPU: núcleo 0
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(0, &cpuset);
@@ -27,14 +26,14 @@ int main() {
         perror("sched_setaffinity");
     }
 
-    // Configurar política en tiempo real
+    // Política tiempo real
     struct sched_param param;
-    param.sched_priority = 80; // prioridad alta (1–99 en SCHED_FIFO)
+    param.sched_priority = 80;
     if (sched_setscheduler(0, SCHED_FIFO, &param) != 0) {
         perror("sched_setscheduler");
     }
 
-    // Abrir GPIO
+    // GPIO
     struct gpiod_chip *chip = gpiod_chip_open(GPIO_CHIP);
     if (!chip) { perror("gpiod_chip_open"); exit(1); }
 
@@ -45,27 +44,23 @@ int main() {
         perror("gpiod_line_request_output"); exit(1);
     }
 
-    // Capturar Ctrl+C
+    // Ctrl+C
     signal(SIGINT, handle_sigint);
 
-    // Temporización absoluta
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = PERIOD_NS;
 
     int state = 0;
 
     while (running) {
-        // Cambiar estado
         state = !state;
         gpiod_line_set_value(line, state);
 
-        // Siguiente instante
-        t.tv_nsec += PERIOD_NS;
-        while (t.tv_nsec >= 1000000000) {
-            t.tv_nsec -= 1000000000;
-            t.tv_sec++;
+        // Espera relativa de 2 ms
+        if (nanosleep(&ts, NULL) < 0) {
+            perror("nanosleep");
         }
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
     }
 
     gpiod_line_release(line);
