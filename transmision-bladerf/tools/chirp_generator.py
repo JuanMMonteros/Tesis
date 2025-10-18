@@ -12,7 +12,7 @@ fs      = 60e6
 potencia = 1.0
 modo = 'up'
 fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
-plot_en = False
+plot_en = True
 config_override_en = True
 
 # ==============================
@@ -111,9 +111,9 @@ def export_to_header():
         f.write(f"#define CONFIG_OVERRIDE_H\n\n")
         f.write(f"// Sobrescritura parametros\n")
         
-        f.write(f"#undef SAMPLE_BITS\n#define SAMPLE_BITS = {8 if fmt=='SC8_Q7' else 16}\n\n")
-        f.write(f"#undef SAMPLE_RATE\n#define SAMPLE_RATE = {int(fs)}\n\n")
-        f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE = "{filename}"\n\n')
+        f.write(f"#undef SAMPLE_BITS\n#define SAMPLE_BITS  {8 if fmt=='SC8_Q7' else 16}\n\n")
+        f.write(f"#undef SAMPLE_RATE\n#define SAMPLE_RATE  {int(fs)}\n\n")
+        f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE  "{filename}"\n\n')
 
         f.write(f"#endif // CONFIG_OVERRIDE_H")
 
