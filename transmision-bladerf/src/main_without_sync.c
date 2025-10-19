@@ -17,7 +17,7 @@ typedef int16_t sample_t;
 #endif
 
 // Retardo entre transmisiones en microsegundos
-#define DELAY_US 2000  // 500 ms, ajustar según necesidad
+#define DELAY_US 4000  // 500 ms, ajustar según necesidad
 
 void delay_us(unsigned int us)
 {
@@ -32,14 +32,14 @@ int main(void)
     struct bladerf *dev = NULL;
     int status;
 
-    /* Abrir dispositivo */
+    /*===================== Abrir dispositivo =======================*/
     status = bladerf_open(&dev, DEVICE_IDENTIFIER);
     if (status != 0) {
         fprintf(stderr, "Error opening bladeRF device: %s\n", bladerf_strerror(status));
         return EXIT_FAILURE;
     }
 
-    /* Configuración RF básica */
+    /*======================= Config RF basica ========================*/
     unsigned int actual_sr = 0;
     status = bladerf_set_sample_rate(dev, BLADERF_CHANNEL_TX(0), SAMPLE_RATE, &actual_sr);
     if (status != 0) {
@@ -54,13 +54,13 @@ int main(void)
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
+    
     status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_TX(0),BANDWIDTH,NULL);
     if (status != 0) {
         fprintf(stderr, "Error setting bandwidth %s\n", bladerf_strerror(status));
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
-
 
     status = bladerf_set_gain(dev, BLADERF_CHANNEL_TX(0), TX_GAIN);
     if (status != 0) {
@@ -69,7 +69,7 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    /* Inicializar interfaz síncrona TX */
+    /*================ Inicializar interfaz síncrona TX ===============*/
     bladerf_format format = (SAMPLE_BITS == 8) ? BLADERF_FORMAT_SC8_Q7 : BLADERF_FORMAT_SC16_Q11;
 
     status = bladerf_sync_config(dev,
@@ -85,7 +85,7 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    /* Cargar forma de onda */
+    /*============ Pre-cargar la forma de onda en memoria =============*/
     FILE *f = fopen(CHIRP_FILE, "rb");
     if (!f) {
         fprintf(stderr, "No se pudo abrir %s\n", CHIRP_FILE);
@@ -127,35 +127,31 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    /* Crear buffer final de tamaño fijo y aplicar ganancia IF */
-    sample_t *waveform_final = calloc(WAVEFORM_LEN, sizeof(sample_t));
-    if (!waveform_final) {
+    /*==== Crear buffer final de tamaño fijo y aplicar ganancia IF ====*/
+    sample_t *waveform = calloc(WAVEFORM_LEN, sizeof(sample_t));
+    
+    if (!waveform) {
         fprintf(stderr, "No se pudo asignar memoria para waveform_final\n");
         free(waveform);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
-
-    size_t max_copy = (total_samples * 2 < WAVEFORM_LEN) ? total_samples * 2 : WAVEFORM_LEN;
-    for (size_t i = 0; i < max_copy; i++) {
-        waveform_final[i] = (sample_t)((float)waveform[i] * TX_GAIN_IF);
-    }
-
-    /* Habilitar módulo TX */
+    
+    /*====================== Habilitar módulo TX ======================*/
     status = bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), true);
     if (status != 0) {
         fprintf(stderr, "Error enabling TX module: %s\n", bladerf_strerror(status));
         free(waveform);
-        free(waveform_final);
         bladerf_close(dev);
         return EXIT_FAILURE;
     }
 
     printf("Transmisión repetida cada %u microsegundos...\n", DELAY_US);
 
+    /*========================= START LOOOP ===========================*/
     /* Loop principal: transmitir repetidamente con retardo */
     while (status == 0) {
-        status = bladerf_sync_tx(dev, waveform_final, WAVEFORM_LEN / 2, NULL, 0);
+        status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
         if (status != 0) {
             fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
             break;
@@ -164,13 +160,12 @@ int main(void)
         // Esperar tiempo deseado antes de próxima transmisión
         delay_us(DELAY_US);
     }
-
+    
     printf("Transmisión finalizada.\n");
 
-    /* Limpieza final */
+    /*========================= Limpieza final ========================*/
     bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false);
     free(waveform);
-    free(waveform_final);
     bladerf_close(dev);
 
     return (status == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

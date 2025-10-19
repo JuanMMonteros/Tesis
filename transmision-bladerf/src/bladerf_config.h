@@ -11,19 +11,23 @@
 
 // Define the sample rate for transmission
 #define SAMPLE_RATE 38000000 // 20 MHz
+#define WAVEFORM_LEN 8192 // 20 MHz
+
+// Define the bandwidth
+#define BANDWIDTH 50000000 // 50MHz
 
 // Define the center frequency for transmission
 #define CENTER_FREQUENCY 1300000000 
 
 // Define the gain for transmission
-#define TX_GAIN 10 // Gain in dB
+#define TX_GAIN 40 // Gain in dB
 
 // Define the number of samples to transmit
 #define DEVICE_IDENTIFIER "*"
 
 /* Parámetros de stream síncrono (ajustables) */
 #define TX_NUM_BUFFERS      2
-#define TX_SAMPLES_PER_BUF  1024   /* múltiplo de 1024 va bien */
+#define TX_SAMPLES_PER_BUF  4096   /* múltiplo de 1024 va bien */
 #define TX_NUM_XFERS        1
 #define STREAM_TIMEOUT_MS   0   /* largo si esperás trigger externo */
 
