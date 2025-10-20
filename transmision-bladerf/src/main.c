@@ -7,6 +7,14 @@
 #include <libbladeRF.h>       // API bladeRF
 #include "bladerf_config.h"   // define configuración bladeRF
 
+#if SAMPLE_BITS == 8
+typedef int8_t sample_t;
+#elif SAMPLE_BITS == 16
+typedef int16_t sample_t;
+#else
+#error "SAMPLE_BITS debe ser 8 o 16"
+#endif
+
 int main(void)
 {
     struct bladerf *dev = NULL; // Device BladeRF
@@ -14,16 +22,7 @@ int main(void)
 
     /*=========== Formato de muestras (SC8_Q7 o SC16_Q11) ============*/
     bladerf_format format;
-    #if SAMPLE_BITS == 8
-        typedef int8_t sample_t;
-        format = BLADERF_FORMAT_SC8_Q7;
-    #elif SAMPLE_BITS == 16
-        typedef int16_t sample_t;
-        format = BLADERF_FORMAT_SC16_Q11;
-    #else
-        #error "SAMPLE_BITS debe ser 8 o 16"
-    #endif
-
+    
     /*===================== Abrir dispositivo =======================*/
     status = bladerf_open(&dev, DEVICE_IDENTIFIER);
     if (status != 0) {
@@ -134,6 +133,15 @@ int main(void)
     
     if (read != (size_t)file_size) {
         fprintf(stderr, "Error leyendo %s\n", CHIRP_FILE);
+        free(waveform);
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
+
+    /*==== Crear buffer final de tamaño fijo y aplicar ganancia IF ====*/
+    
+    if (!waveform) {
+        fprintf(stderr, "No se pudo asignar memoria para waveform_final\n");
         free(waveform);
         bladerf_close(dev);
         return EXIT_FAILURE;
