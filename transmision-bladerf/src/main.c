@@ -171,7 +171,7 @@ int main(void)
 
     while (status == 0) { 
         //Armar trigger para esperar el pulso externo
-        status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
+        // status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
 
         //Espera activa (polling) del trigger
         do {
@@ -187,7 +187,7 @@ int main(void)
         } while (fired && status == 0);
 
         //Re-armar trigger para la próxima iteración
-        status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+        // status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
     }
 
     if (status != 0) {
