@@ -6,7 +6,7 @@ SRC_DIR = src
 OBJ_DIR = obj
 
 # Archivos fuente y objeto
-SRC = $(SRC_DIR)/main.c
+SRC = $(SRC_DIR)/main_without_sync.c
 OBJ = $(OBJ_DIR)/main.o
 
 # Compilador y flags
