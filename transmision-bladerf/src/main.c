@@ -149,45 +149,45 @@ int main(void)
 
     /*==== Configurar trigger externo (mini_exp[1] = J51-1 en xA4) ====*/
     struct bladerf_trigger trigger;
-    status = bladerf_trigger_init(dev,
-                                  BLADERF_CHANNEL_TX(0),
-                                  BLADERF_TRIGGER_MINI_EXP_1,
-                                  &trigger);
-    if (status != 0) {
-        fprintf(stderr, "Error inicializando trigger externo: %s\n", bladerf_strerror(status));
-        bladerf_close(dev);
-        return EXIT_FAILURE;
-    }
+    while (1) {
+        // 1. Armar trigger antes de precargar
+        status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
+        if (status != 0) {
+            fprintf(stderr, "Error armando trigger: %s\n", bladerf_strerror(status));
+            break;
+        }
 
-    // Rol SLAVE: espera pulso externo
-    trigger.role = BLADERF_TRIGGER_ROLE_SLAVE;
-
-/*========================= START LOOOP ===========================*/
-    /* Transmisión repetida ante cada disparo */
-    bool fired = false;
-    bool is_armed = false;
-    bool fired_req = false;
-    printf("Esperando trigger externo para transmitir...\n");
-
-    while (status == 0) { 
-        //Armar trigger para esperar el pulso externo
-        // status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
-
-        //Espera activa (polling) del trigger
-        do {
-            status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (!fired && status == 0);
-
-        //Transmitir chirp 
+        // 2. Precargar samples al buffer
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
+        if (status != 0) {
+            fprintf(stderr, "Error precargando buffer de transmisión: %s\n", bladerf_strerror(status));
+            break;
+        }
 
-        //One-shot: esperar a que el pulso del trigger cambie su estado
+        printf("Esperando trigger...\n");
+
+        // 3. Esperar a que el trigger externo dispare la transmisión
         do {
-            bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (fired && status == 0);
+            status = bladerf_trigger_state(dev, &trigger, &is_armed, &fired, &fired_req, NULL, NULL);
+            if (status != 0) {
+                fprintf(stderr, "Error leyendo estado del trigger: %s\n", bladerf_strerror(status));
+                break;
+            }
+        } while (!fired);
 
-        //Re-armar trigger para la próxima iteración
-        // status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
+        printf("Trigger detectado: transmisión en curso.\n");
+
+        // 4. Esperar a que finalice el trigger (evita reusar el mismo pulso)
+        do {
+            status = bladerf_trigger_state(dev, &trigger, &is_armed, &fired, &fired_req, NULL, NULL);
+            if (status != 0) {
+                fprintf(stderr, "Error leyendo estado del trigger (post-disparo): %s\n", bladerf_strerror(status));
+                break;
+            }
+        } while (fired);
+
+        // 5. El bucle se repite para la próxima transmisión
+        printf("Transmisión completada. Esperando próximo trigger...\n");
     }
 
     if (status != 0) {
