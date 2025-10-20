@@ -149,6 +149,24 @@ int main(void)
 
     /*==== Configurar trigger externo (mini_exp[1] = J51-1 en xA4) ====*/
     struct bladerf_trigger trigger;
+    status = bladerf_trigger_init(dev,
+                                  BLADERF_CHANNEL_TX(0),
+                                  BLADERF_TRIGGER_MINI_EXP_1,
+                                  &trigger);
+    if (status != 0) {
+        fprintf(stderr, "Error inicializando trigger externo: %s\n", bladerf_strerror(status));
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
+
+    // Rol SLAVE: espera pulso externo
+    trigger.role = BLADERF_TRIGGER_ROLE_SLAVE;
+
+/*========================= START LOOOP ===========================*/
+    /* Transmisión repetida ante cada disparo */
+    bool fired = false;
+    bool is_armed = false;
+    bool fired_req = false;
     while (1) {
         // 1. Armar trigger antes de precargar
         status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
