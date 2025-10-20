@@ -171,12 +171,12 @@ int main(void)
 
     while (status == 0) { 
         //Armar trigger para esperar el pulso externo
-        // status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
+        status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
 
         //Espera activa (polling) del trigger
-        do {
-            status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (!fired);
+        // do {
+        //     status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
+        // } while (!fired);
 
         //Transmitir chirp 
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
@@ -185,7 +185,7 @@ int main(void)
         // do {
         //     bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
         // } while (fired);
-        usleep(3700);  // Ajustar según el ancho del pulso de trigger
+        // usleep(3700);  // Ajustar según el ancho del pulso de trigger
 
         //Re-armar trigger para la próxima iteración
         // status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
