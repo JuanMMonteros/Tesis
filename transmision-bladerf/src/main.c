@@ -109,7 +109,7 @@ int main(void)
     }
     rewind(f);
 
-    size_t total_samples = file_size / (2 * sizeof(sample_t));
+    // size_t total_samples = file_size / (2 * sizeof(sample_t));
     //sample_t *waveform = malloc(file_size);
     sample_t *waveform = calloc(WAVEFORM_LEN, sizeof(sample_t));
     
@@ -173,22 +173,14 @@ int main(void)
         //Armar trigger para esperar el pulso externo
         status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
 
-        //Espera activa (polling) del trigger
-        // do {
-        //     status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        // } while (!fired);
-
         //Transmitir chirp 
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
-
+        
         //One-shot: esperar a que el pulso del trigger cambie su estado
+        usleep(2000);  // Ajustar según el ancho del pulso de trigger
         do {
             bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
         } while (fired && status == 0);
-        // usleep(3700);  // Ajustar según el ancho del pulso de trigger
-
-        //Re-armar trigger para la próxima iteración
-        // status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
     }
 
     if (status != 0) {
