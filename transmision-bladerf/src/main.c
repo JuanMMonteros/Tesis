@@ -176,7 +176,7 @@ int main(void)
         //Espera activa (polling) del trigger
         do {
             status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (!fired && status == 0);
+        } while (!fired && status == 1);
 
         //Transmitir chirp 
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
