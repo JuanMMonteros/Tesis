@@ -182,9 +182,9 @@ int main(void)
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
 
         //One-shot: esperar a que el pulso del trigger cambie su estado
-        // do {
-        //     bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        // } while (fired);
+        do {
+            bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
+        } while (fired && status == 0);
         // usleep(3700);  // Ajustar según el ancho del pulso de trigger
 
         //Re-armar trigger para la próxima iteración
