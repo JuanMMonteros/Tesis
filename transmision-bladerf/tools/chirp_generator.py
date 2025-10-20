@@ -7,13 +7,17 @@ import os
 # ==============================
 f_start = -19e6
 f_end   = 19e6
-t_chirp = 10e-6
+t_chirp = 100e-6
 fs      = 60e6
-potencia = 1.0
-modo = 'up'
 fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 plot_en = True
 config_override_en = True
+
+potencia = 1.0 # Potencia de la señal
+phase = 2*np.pi*0/np.pi # Fase inicial en radianes
+delay = 10e-6  # Retardo antes del chirp
+
+muestras_delay = int(np.floor(delay * fs))
 
 # ==============================
 # Generacion Chirp
@@ -21,11 +25,7 @@ config_override_en = True
 amplitud = np.sqrt(potencia)
 samples_per_chirp = int(np.floor(t_chirp * fs))
 
-# Frecuencias según modo
-if modo.lower() == 'down':
-    f1, f2 = f_end, f_start
-else:
-    f1, f2 = f_start, f_end
+f1, f2 = f_start, f_end
 
 # Vector de tiempo
 t = np.arange(samples_per_chirp) / fs
@@ -34,7 +34,15 @@ t = np.arange(samples_per_chirp) / fs
 k = (f2 - f1) / t_chirp
 
 # Señal compleja
-y_chirp = amplitud * np.exp(1j * 2 * np.pi * (f1 * t + 0.5 * k * t**2))
+y_chirp = amplitud * np.exp(1j * 2 * np.pi * (f1 * t + 0.5 * k * t**2))* np.exp(1j * phase)
+
+# ==============================
+# Agregar retardo (ceros al inicio)
+# ==============================
+if muestras_delay > 0:
+    y_delay = np.zeros(muestras_delay, dtype=complex)
+    y_chirp = np.concatenate((y_delay, y_chirp))
+    print(f"Se agregaron {muestras_delay} muestras de delay ({delay*1e6:.1f} µs).")
 
 
 # ==============================
@@ -89,6 +97,7 @@ def load_sc(filename, fmt='SC16_Q11'):
     real = data[0::2] / scale
     imag = data[1::2] / scale
     return real + 1j * imag
+
 
 # ========================================
 # Funciones de escritura config_override.h
@@ -154,13 +163,16 @@ print("--------------------------------------------------------------------\n")
 # ==============================
 # Gráfica
 # ==============================
+
 if plot_en:
+    t_total = np.arange(len(x_q)) / fs  # eje de tiempo con delay incluido
     plt.figure(figsize=(8,4))
-    plt.plot(t*1e6, np.real(x_q), label='Real')
-    plt.plot(t*1e6, np.imag(x_q), label='Imag')
+    plt.plot(t_total * 1e6, np.real(x_q), label='Real')
+    plt.plot(t_total * 1e6, np.imag(x_q), label='Imag')
     plt.grid(True)
     plt.xlabel("Tiempo (µs)")
     plt.ylabel("Amplitud")
-    plt.title(f"Chirp cuantizado ({fmt})")
+    plt.title(f"Chirp cuantizado con delay ({fmt})")
     plt.legend()
     plt.show()
+
