@@ -176,7 +176,7 @@ int main(void)
         //Espera activa (polling) del trigger
         do {
             status = bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (!fired && status == 1);
+        } while (!fired);
 
         //Transmitir chirp 
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
@@ -184,7 +184,7 @@ int main(void)
         //One-shot: esperar a que el pulso del trigger cambie su estado
         do {
             bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (fired && status == 1);
+        } while (fired && status == 0);
 
         //Re-armar trigger para la próxima iteración
         // status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
