@@ -184,7 +184,7 @@ int main(void)
         //One-shot: esperar a que el pulso del trigger cambie su estado
         do {
             bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-        } while (fired);
+        } while (status == 1);
 
         //Re-armar trigger para la próxima iteración
         // status = bladerf_trigger_arm(dev, &trigger, false, 0, 0);
