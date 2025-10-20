@@ -120,7 +120,7 @@ int main(void)
     rewind(f);
 
     size_t total_samples = file_size / (2 * sizeof(sample_t));
-    sample_t *waveform = malloc(file_size);
+    sample_t *waveform = calloc(WAVEFORM_LEN, sizeof(sample_t));
     
     if (!waveform) {
         fprintf(stderr, "No se pudo asignar memoria para la forma de onda\n");
