@@ -62,7 +62,7 @@ int main(void)
     }
 
     /*================ Inicializar interfaz síncrona TX ===============*/
-    bladerf_format format = (SAMPLE_BITS == 8) ? BLADERF_FORMAT_SC8_Q7 : BLADERF_FORMAT_SC16_Q11;
+    format = (SAMPLE_BITS == 8) ? BLADERF_FORMAT_SC8_Q7 : BLADERF_FORMAT_SC16_Q11;
     status = bladerf_sync_config(dev,
                                  BLADERF_CHANNEL_TX(0),
                                  format, //se configura segun SAMPLE_BITS
