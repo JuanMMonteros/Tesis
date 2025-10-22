@@ -7,7 +7,7 @@ import os
 # ==============================
 f_start = -19e6
 f_end   = 19e6
-t_chirp = 100e-6
+t_chirp = 10e-6
 fs      = 60e6
 fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 plot_en = True
@@ -17,11 +17,12 @@ potencia = 1.0 # Potencia de la señal
 phase = 2*np.pi*0/np.pi # Fase inicial en radianes
 delay = 10e-6  # Retardo antes del chirp
 
-muestras_delay = int(np.floor(delay * fs))
+delay_calibracion = 0.385e-6  # Retardo de calibración 
 
 # ==============================
 # Generacion Chirp
 # ==============================
+muestras_delay = int(np.floor( (delay - delay_calibracion) * fs))
 amplitud = np.sqrt(potencia)
 samples_per_chirp = int(np.floor(t_chirp * fs))
 
@@ -42,7 +43,6 @@ y_chirp = amplitud * np.exp(1j * 2 * np.pi * (f1 * t + 0.5 * k * t**2))* np.exp(
 if muestras_delay > 0:
     y_delay = np.zeros(muestras_delay, dtype=complex)
     y_chirp = np.concatenate((y_delay, y_chirp))
-    print(f"Se agregaron {muestras_delay} muestras de delay ({delay*1e6:.1f} µs).")
 
 
 # ==============================
@@ -132,7 +132,12 @@ def export_to_header():
 # ==============================
 # Guardar, cargar y analizar
 # ==============================
-filename = f'./bin/chirp_{fmt}.bin'
+# Crear carpeta 'bin' si no existe
+bin_dir = './bin'
+if not os.path.exists(bin_dir):
+    os.makedirs(bin_dir)
+filename = f'{bin_dir}/chirp_{fmt}.bin'
+
 num_samples, bytes_per_sample = save_sc(filename, y_chirp, fmt=fmt)
 x_q = load_sc(filename, fmt=fmt)
 
@@ -154,6 +159,8 @@ print(f"Formato: {fmt}")
 print(f"Muestras complejas guardadas: {num_complex}")
 print(f"Tamaño total del archivo: {file_size} bytes")
 print(f"SNR de cuantización: {SNR_dB:.2f} dB")
+print(f"Delay: {delay*1e6:.3f} µs")
+print(f"Calibración delay: {delay_calibracion*1e6:.3f} µs")
 if config_override_en:
     export_to_header()
 else:

@@ -7,6 +7,8 @@ transmision_bladerf
 
 # Directorio de objetos
 obj/
+# Directorio de binarios
+bin/
 
 # Archivos temporales
 *~
@@ -16,5 +18,8 @@ obj/
 
 # VS Code: ignora todo 
 .vscode/*
+
+# Ignorar archivo de configuración generado automáticamente
+src/config_override.h
 
 
