@@ -7,15 +7,16 @@ Este proyecto configura una transmisión utilizando la biblioteca libbladerf. A 
 ```
 transmision-bladerf
 ├── src
-│   ├── main.c            # Punto de entrada de la aplicación
-│   ├── bladerf_config.h  # Configuraciones y definiciones para libbladerf
-│   └── config_override.h # Opcional que permite sobrescribir configuraciones
-├── tools
-│   └── common_plots.py   # Funciones de post-procesado
-├── bin                   # Contiene .bin con datos chirp
-├── obj                   # Contiene .o se crea al compilar
-├── Makefile              # Archivo para compilar el proyecto
-└── README.md             # Documentación del proyecto
+│   ├── main.c             # Punto de entrada de la aplicación
+│   ├── bladerf_config.h   # Configuraciones y definiciones para libbladerf
+│   └── config_override.h  # Opcional que permite sobrescribir configuraciones
+├── tools 
+│   ├── common_plots.py    # Funciones de post-procesado
+│   └── chirp_generator.py # Genera chirps unicos y sus config
+├── bin                    # Contiene .bin con datos chirp
+├── obj                    # Contiene .o se crea al compilar
+├── Makefile               # Archivo para compilar el proyecto
+└── README.md              # Documentación del proyecto
 ```
 
 ## Instrucciones de Compilación
