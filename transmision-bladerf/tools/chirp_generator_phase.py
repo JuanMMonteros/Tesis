@@ -170,35 +170,7 @@ if plot_en:
     matriz_chirps = y_chirps.reshape(N_chirps, muestras_por_chirp_completo)
     t_chirp = np.arange(muestras_por_chirp_completo) / fs * 1e6  # Tiempo en microsegundos
     
-    # GRÁFICO 1: Chirps individuales
-    fig, axes = plt.subplots(N_chirps, 1, figsize=(12, 3*N_chirps))
-    if N_chirps == 1:
-        axes = [axes]
-    
-    for i in range(N_chirps):
-        chirp_completo = matriz_chirps[i]
-        
-        axes[i].plot(t_chirp, np.real(chirp_completo), 'b-', label='Real', linewidth=1)
-        axes[i].plot(t_chirp, np.imag(chirp_completo), 'r-', label='Imag', linewidth=1, alpha=0.7)
-        
-        # Marcar región de delay
-        if muestras_delay > 0:
-            axes[i].axvspan(0, t_chirp[muestras_delay-1], alpha=0.2, color='gray', label='Delay')
-        
-        # Calcular fase actual para el título
-        current_phase_deg = phase + i * phase_increment_deg
-        axes[i].set_ylabel(f'Chirp {i+1}\nFase: {current_phase_deg:.1f}°')
-        axes[i].grid(True, alpha=0.3)
-        axes[i].legend(loc='upper right')
-        
-        if i == N_chirps - 1:
-            axes[i].set_xlabel('Tiempo (µs)')
-    
-    plt.suptitle(f'{chirp_type_name}s con Incremento de Fase\n(N={N_chirps}, Δφ={phase_increment_deg}°)')
-    plt.tight_layout()
-    plt.show()
-    
-    # GRÁFICO 2: Vista superpuesta
+    # Vista superpuesta
     plt.figure(figsize=(12, 6))
     
     for i in range(N_chirps):
