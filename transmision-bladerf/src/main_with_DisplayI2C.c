@@ -26,7 +26,7 @@ typedef int16_t sample_t;
 #define DELAY_US 2000  // 500 ms, ajustar según necesidad
 
 
-#define NUM_CHIRPS 4 // Número de chirps en binario
+#define NUM_CHIRPS 1 // Número de chirps en binario
 #define TRIGGER_EN 0 // 1 para habilitar trigger externo, 0 para deshabilitar
 
 /*================================================================*/
