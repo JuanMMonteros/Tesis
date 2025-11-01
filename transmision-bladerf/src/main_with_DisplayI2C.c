@@ -22,11 +22,19 @@ typedef int16_t sample_t;
 #error "SAMPLE_BITS debe ser 8 o 16"
 #endif
 
+void delay_us(unsigned int us)
+{
+    struct timespec ts;
+    ts.tv_sec  = us / 1000000;
+    ts.tv_nsec = (us % 1000000) * 1000;
+    nanosleep(&ts, NULL);
+}
+
 // Retardo entre transmisiones en microsegundos
 #define DELAY_US 2000  // 500 ms, ajustar según necesidad
 
 
-#define NUM_CHIRPS 1 // Número de chirps en binario
+#define NUM_CHIRPS 5 // Número de chirps en binario
 #define TRIGGER_EN 0 // 1 para habilitar trigger externo, 0 para deshabilitar
 
 /*================================================================*/
@@ -162,6 +170,7 @@ int main(void)
     display_status("Dev Abierto"); usleep(DISPLAY_DELAY);
 
     /*======================= Config RF basica ========================*/
+    printf("smaple rate : %fMHZ\n",SAMPLE_RATE);
     unsigned int actual_sr = 0;
     status = bladerf_set_sample_rate(dev, BLADERF_CHANNEL_TX(0), SAMPLE_RATE, &actual_sr);
     if (status != 0) {
@@ -262,8 +271,8 @@ int main(void)
     }
 
     size_t samples_per_chirp = total_samples / NUM_CHIRPS;
-
-    if (total_samples < WAVEFORM_LEN/2) {
+    printf("samples_per chirp: %d , total samples: %d , WAVEFORM %d\n", (int)samples_per_chirp, (int)total_samples,WAVEFORM_LEN/2);
+    if (samples_per_chirp > WAVEFORM_LEN/2) {
         display_error("Error: Bufer len", NULL);
         fclose(f);
         bladerf_close(dev);
@@ -343,11 +352,13 @@ int main(void)
     bool is_armed = false;
     bool fired_req = false;
     
-    display_status("Esperando Trig...");usleep(DISPLAY_DELAY); // Reemplaza a printf
+    
     // Copiar el chirp completo al inicio del buffer
     memcpy(waveform, chirps[0], samples_per_chirp * 2 * sizeof(sample_t));
+    int chirp_idx=0; 
 
     if (TRIGGER_EN) {
+        display_status("Esperando Trig...");usleep(DISPLAY_DELAY); // Reemplaza a printf
 
         while (status == 0) { 
             //Armar trigger para esperar el pulso externo
@@ -364,6 +375,7 @@ int main(void)
         }
 
     }else{
+        display_status("Transmitiendo..."); // Reemplaza a printf
         /* Loop principal: transmitir repetidamente con retardo */
         while (status == 0) {
             status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
@@ -371,6 +383,8 @@ int main(void)
                 fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
                 break;
             }
+            chirp_idx = (chirp_idx + 1) % NUM_CHIRPS;
+            memcpy(waveform, chirps[chirp_idx], samples_per_chirp * 2 * sizeof(sample_t));
             // Esperar tiempo deseado antes de próxima transmisión
             delay_us(DELAY_US);
         }

@@ -5,24 +5,24 @@ import os
 # ==============================
 # Parámetros del chirp
 # ==============================
-f_start = -19e6
-f_end   = 19e6
+f_start = -5e6
+f_end   = 5e6
 t_chirp = 10e-6
 fs      = 60e6
 fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
-plot_en = True
+plot_en = False
 config_override_en = True
 
 potencia = 1.0       # Potencia de la señal
 phase = 0            # Fase inicial en radianes
-delay = 10e-6        # Retardo antes del chirp
-delay_calibracion = 0.385e-6  # Retardo de calibración 
+delay =0e-6        # Retardo antes del chirp
+delay_calibracion = 0#0.385e-6  # Retardo de calibración 
 
 # ==============================
 # Parámetros avanzados
 # ==============================
 N_chirps = 5  # Número de chirps a generar
-phase_increment_deg = 5  # Incremento de fase en grados por chirp
+phase_increment_deg = 0  # Incremento de fase en grados por chirp
 chirp_direction = 'down'  # 'up' o 'down' - Dirección del chirp
 
 # ==============================
@@ -130,7 +130,7 @@ def load_sc(filename, fmt='SC16_Q11'):
 bin_dir = './bin'
 if not os.path.exists(bin_dir):
     os.makedirs(bin_dir)
-filename = f'{bin_dir}/chirp_{chirp_direction}_{fmt}_{N_chirps}_phase_inc_{phase_increment_deg}deg.bin'
+filename = f'{bin_dir}/chirp_{fmt}.bin'
 
 num_samples, bytes_per_sample = save_sc(filename, y_chirps, fmt=fmt)
 x_q = load_sc(filename, fmt=fmt)
