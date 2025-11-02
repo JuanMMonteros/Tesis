@@ -18,6 +18,7 @@ transmision-bladerf
 │   ├── chirp_generator_phase.py    # genera barridos de fase
 │   ├── chirp_generator.py          # Genera chirps unicos y sus config
 │   ├── load_chirp.py               # Carga barridos de chirps y plotea
+│   ├── concatenator.py             # Concatena binarios
 │   └── chirp_generator_phase.py    # genera barridos de fase
 |
 ├── bin                             # Contiene .bin con datos chirp
