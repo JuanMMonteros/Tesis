@@ -1,13 +1,14 @@
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <time.h>        // Para nanosleep
-#include <libbladeRF.h>    // API bladeRF
-#include <math.h>
-#include <string.h>
-#include "bladerf_config.h" // Configuración bladeRF
+#include <stdlib.h>       // Usada para funciones como malloc, calloc, free, EXIT_FAILURE, etc.
+#include <stdbool.h>      // Usada para el tipo `bool`.
+#include <stdint.h>       // Usada para tipos como `int8_t`, `int16_t`.
+#include <unistd.h>       // Usada para funciones como usleep, sleep.
+#include <stdio.h>        // Usada para funciones como printf, fprintf, fopen, fclose.
+#include <time.h>         // Usada para nanosleep (pero no se utiliza en el código actual).
+#include <libbladeRF.h>   // Usada para la API de BladeRF.
+#include <math.h>         // No se utiliza en el código actual.
+#include <string.h>       // Usada para funciones como memcpy.
+#include "bladerf_config.h" // Usada para configuraciones específicas de BladeRF.
+#include "lcd_i2c.h"      // Usada para funciones relacionadas con el LCD.
 
 #if SAMPLE_BITS == 8
 typedef int8_t sample_t;
@@ -16,10 +17,6 @@ typedef int16_t sample_t;
 #else
 #error "SAMPLE_BITS debe ser 8 o 16"
 #endif
-
-/*===========      CONTROLADOR PANTALLA I2C LCD     ==============*/
-#include "lcd_i2c.h"
-/*================================================================*/
 
 int main(void)
 {
