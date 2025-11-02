@@ -22,8 +22,9 @@ CPU_CORE = 2        # Núcleo donde se fijará la afinidad
 RT_PRIORITY = 95    # Prioridad SCHED_FIFO
 
 # Regla por defecto
-all: $(TARGET)
+all: clean compile run-rt $(TARGET)
 
+compile: $(TARGET)
 # Compilar el ejecutable
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
@@ -45,5 +46,5 @@ run-rt: $(TARGET)
 clean:
 	rm -rf $(OBJ_DIR) $(TARGET)
 
-.PHONY: all clean run run-rt
+.PHONY: all compile clean run run-rt
 
