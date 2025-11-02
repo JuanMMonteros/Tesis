@@ -104,14 +104,14 @@ if __name__ == "__main__":
     # Parámetros (deben coincidir con generación)
     fs = 60e6
     t_chirp = 10e-6
-    delay = 10e-6
+    delay = 0
     delay_calibracion = 0.385e-6
     fmt = 'SC16_Q11'
     N_chirps = 5
 
     # Ruta del archivo
     bin_dir = './bin'
-    filename = f'{bin_dir}/chirp_down_{fmt}_{N_chirps}_phase_inc_5deg.bin'
+    filename = f'{bin_dir}/chirp_{fmt}_phase_sweep.bin'
     
     # Cargar y visualizar
     if os.path.exists(filename):

@@ -13,11 +13,10 @@
 // Archivo con chirp I/Q (pre-generado)
 #define CHIRP_FILE "./bin/my_chirpL.bin" 
 // Número de chirps en binario
-#define NUM_CHIRPS 5 
+#define NUM_CHIRPS 1
 
 // Define the sample rate for transmission
-#define SAMPLE_RATE 38000000 // 20 MHz
-#define WAVEFORM_LEN 8192 // 20 MHz
+#define SAMPLE_RATE 38000000 // 38 MHz
 
 // Define the bandwidth
 #define BANDWIDTH 50000000 // 50MHz
@@ -31,11 +30,11 @@
 // Define the number of samples to transmit
 #define DEVICE_IDENTIFIER "*"
 
-/* Parámetros de stream síncrono (ajustables) */
+// Parámetros de stream síncrono 
 #define TX_NUM_BUFFERS      2
-#define TX_SAMPLES_PER_BUF  4096   /* múltiplo de 1024 va bien */
+#define TX_SAMPLES_PER_BUF  4096  
 #define TX_NUM_XFERS        1
-#define STREAM_TIMEOUT_MS   0   /* largo si esperás trigger externo */
+#define STREAM_TIMEOUT_MS   0   
 
 /*==========================================================*/
 // Override settings if config_override.h is present
@@ -43,5 +42,8 @@
     #include "config_override.h"
 #endif
 /*==========================================================*/
+
+// Longitud total del buffer de transmisión
+#define WAVEFORM_LEN (TX_NUM_BUFFERS * TX_SAMPLES_PER_BUF) 
 
 #endif // BLADERF_CONFIG_H

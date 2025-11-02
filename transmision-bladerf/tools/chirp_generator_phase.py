@@ -22,7 +22,7 @@ delay_calibracion = 0#0.385e-6  # Retardo de calibración
 # Parámetros avanzados
 # ==============================
 N_chirps = 5  # Número de chirps a generar
-phase_increment_deg = 0  # Incremento de fase en grados por chirp
+phase_increment_deg = 72  # Incremento de fase en grados por chirp
 chirp_direction = 'down'  # 'up' o 'down' - Dirección del chirp
 
 # ==============================
@@ -49,12 +49,6 @@ else:  # 'up' por defecto
 
 # Tasa de chirp
 k = (f_final - f_initial) / t_chirp
-
-print(f"Parámetros de chirp:")
-print(f"  Tipo: {chirp_type_name}")
-print(f"  Frecuencia inicial: {f_initial/1e6:.1f} MHz")
-print(f"  Frecuencia final: {f_final/1e6:.1f} MHz")
-print(f"  Tasa de chirp (k): {k/1e12:.2f} THz/s")
 
 # Generar chirps con fase incremental
 chirps_list = []
@@ -124,13 +118,52 @@ def load_sc(filename, fmt='SC16_Q11'):
     imag = data[1::2] / scale
     return real + 1j * imag
 
+# ========================================
+# Funciones de escritura config_override.h
+# ========================================
+def export_to_header():
+    """
+    Crea config_override.h con la configuracion del chirp generado
+    """
+    header_path = "./src/config_override.h"
+    # Verificar que la carpeta destino exista
+    dir_path = os.path.dirname(header_path)
+    if not os.path.exists(dir_path):
+        raise FileNotFoundError(f"No se encuentra el destino {header_path}")
+
+    # Abrir archivo .h
+    with open(header_path, "w") as f:
+        f.write("// Archivo generado automaticamente\n")
+        f.write("// Sobrescribe parametros del archivo bladerf_config.h\n\n")
+        f.write(f"#ifndef CONFIG_OVERRIDE_H\n")
+        f.write(f"#define CONFIG_OVERRIDE_H\n\n")
+        f.write(f"// Sobrescritura parametros\n")
+        
+        f.write(f"#undef SAMPLE_BITS\n#define SAMPLE_BITS  {8 if fmt=='SC8_Q7' else 16}\n\n")
+        f.write(f"#undef SAMPLE_RATE\n#define SAMPLE_RATE  {int(fs)}\n\n")
+        f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE  "{filename}"\n\n')
+        f.write(f'#undef NUM_CHIRPS\n#define NUM_CHIRPS  {N_chirps}\n\n')
+
+        if(t_chirp * fs + muestras_delay < 8192):
+            f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
+            f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
+        elif(t_chirp * fs + muestras_delay < 16384):
+            f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
+            f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  4\n\n")
+        else:
+            raise ValueError("El chirp generado es demasiado largo para el buffer")
+
+        f.write(f"#endif // CONFIG_OVERRIDE_H")
+
+    print(f"Header generado en: {header_path}")
+
 # ==============================
 # Guardar, cargar y analizar
 # ==============================
 bin_dir = './bin'
 if not os.path.exists(bin_dir):
     os.makedirs(bin_dir)
-filename = f'{bin_dir}/chirp_{fmt}.bin'
+filename = f'{bin_dir}/chirp_{fmt}_phase_sweep.bin'
 
 num_samples, bytes_per_sample = save_sc(filename, y_chirps, fmt=fmt)
 x_q = load_sc(filename, fmt=fmt)
@@ -159,6 +192,10 @@ print(f"Calibración delay: {delay_calibracion*1e6:.3f} µs")
 print(f"Incremento de fase por chirp: {phase_increment_deg}°")
 print(f"Frecuencia inicial: {f_initial/1e6:.1f} MHz")
 print(f"Frecuencia final: {f_final/1e6:.1f} MHz")
+if config_override_en:
+    export_to_header()
+else:
+    print(f"Advertencia: autogeneración de config_override.h desactivada")
 print("--------------------------------------------------------------------\n")
 
 # ==============================
