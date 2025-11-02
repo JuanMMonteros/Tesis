@@ -6,8 +6,11 @@ SRC_DIR = src
 OBJ_DIR = obj
 
 # Archivos fuente y objeto
-SRC = $(SRC_DIR)/main.c
-OBJ = $(OBJ_DIR)/main.o
+# Archivos fuente y objeto
+SRC = $(SRC_DIR)/main.c \
+      $(SRC_DIR)/lcd_i2c.c
+
+OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 # Compilador y flags
 CC = gcc

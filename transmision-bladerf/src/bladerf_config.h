@@ -3,11 +3,17 @@
 
 #include <libbladeRF.h>
 
+//Ajuste one shot o retardo entre transmisiones
+#define DELAY_US 2000  // us
+// 1 para habilitar trigger externo, 0 para deshabilitar
+#define TRIGGER_EN 0 
+
 // Define para cambiar entre SC8_Q7 (8 bits) y SC16_Q11 (16 bits)
 #define SAMPLE_BITS 16
-
 // Archivo con chirp I/Q (pre-generado)
 #define CHIRP_FILE "./bin/my_chirpL.bin" 
+// Número de chirps en binario
+#define NUM_CHIRPS 5 
 
 // Define the sample rate for transmission
 #define SAMPLE_RATE 38000000 // 20 MHz

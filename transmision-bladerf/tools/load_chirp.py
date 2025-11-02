@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     # Ruta del archivo
     bin_dir = './bin'
-    filename = f'{bin_dir}/chirp_{fmt}_{N_chirps}_phase_inc_5deg.bin'
+    filename = f'{bin_dir}/chirp_down_{fmt}_{N_chirps}_phase_inc_5deg.bin'
     
     # Cargar y visualizar
     if os.path.exists(filename):

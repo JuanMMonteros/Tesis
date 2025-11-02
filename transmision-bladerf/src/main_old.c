@@ -109,7 +109,7 @@ int main(void)
     }
     rewind(f);
 
-    size_t total_samples = file_size / (2 * sizeof(sample_t));
+    // size_t total_samples = file_size / (2 * sizeof(sample_t));
     //sample_t *waveform = malloc(file_size);
     sample_t *waveform = calloc(WAVEFORM_LEN, sizeof(sample_t));
     
@@ -147,19 +147,47 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    printf("Transmisión repetida cada %u microsegundos...\n", DELAY_US);
+    /*==== Configurar trigger externo (mini_exp[1] = J51-1 en xA4) ====*/
+    struct bladerf_trigger trigger;
+    status = bladerf_trigger_init(dev,
+                                  BLADERF_CHANNEL_TX(0),
+                                  BLADERF_TRIGGER_MINI_EXP_1,
+                                  &trigger);
+    if (status != 0) {
+        fprintf(stderr, "Error inicializando trigger externo: %s\n", bladerf_strerror(status));
+        bladerf_close(dev);
+        return EXIT_FAILURE;
+    }
 
-    /*========================= START LOOOP ===========================*/
-    /* Loop principal: transmitir repetidamente con retardo */
-    while (status == 0) {
+    // Rol SLAVE: espera pulso externo
+    trigger.role = BLADERF_TRIGGER_ROLE_SLAVE;
+
+/*========================= START LOOOP ===========================*/
+    /* Transmisión repetida ante cada disparo */
+    bool fired = false;
+    bool is_armed = false;
+    bool fired_req = false;
+    printf("Esperando trigger externo para transmitir...\n");
+
+    while (status == 0) { 
+        //Armar trigger para esperar el pulso externo
+        status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
+
+        //Transmitir chirp 
         status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
-        if (status != 0) {
-            fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
-            break;
-        }
+        
+        //One-shot: esperar a que el pulso del trigger cambie su estado
+        usleep(2000);  // Ajustar según el ancho del pulso de trigger
+        do {
+            bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
+        } while (fired && status == 0);
+    }
 
-        // Esperar tiempo deseado antes de próxima transmisión
-        delay_us(DELAY_US);
+    if (status != 0) {
+        fprintf(stderr, "Error en loop principal: %s\n", bladerf_strerror(status));
+        free(waveform);
+        bladerf_close(dev);
+        return EXIT_FAILURE;
     }
     
     printf("Transmisión finalizada.\n");
