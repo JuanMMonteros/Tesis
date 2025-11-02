@@ -229,7 +229,7 @@ int main(void)
     int chirp_idx=0; 
 
     if (TRIGGER_EN) {
-        display_status("Esperando Trig...");usleep(DISPLAY_DELAY); // Reemplaza a printf
+        display_status("Esperando Trig...");usleep(DISPLAY_DELAY); 
 
         while (status == 0) { 
             //Armar trigger para esperar el pulso externo
@@ -237,6 +237,10 @@ int main(void)
 
             //Transmitir chirp 
             status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
+            
+            //Actualizar al siguiente chirp
+            chirp_idx = (chirp_idx + 1) % NUM_CHIRPS;
+            memcpy(waveform, chirps[chirp_idx], samples_per_chirp * 2 * sizeof(sample_t));
             
             //One-shot: esperar a que el pulso del trigger cambie su estado
             usleep(DELAY_US);  // Ajustar según el ancho del pulso de trigger
@@ -246,7 +250,7 @@ int main(void)
         }
 
     }else{
-        display_status("Transmitiendo..."); // Reemplaza a printf
+        display_status("Transmitiendo..."); 
         /* Loop principal: transmitir repetidamente con retardo */
         while (status == 0) {
             status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
