@@ -236,13 +236,12 @@ int main(void)
         display_status("Transmitiendo..."); 
         /* Loop principal: transmitir repetidamente con retardo */
         while (status == 0) {
-            status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
+            status = bladerf_sync_tx(dev, waveform[chirp_idx], WAVEFORM_LEN / 2, NULL, 0);
             if (status != 0) {
                 fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
                 break;
             }
             chirp_idx = (chirp_idx + 1) % NUM_CHIRPS;
-            memcpy(waveform, chirps[chirp_idx], samples_per_chirp * 2 * sizeof(sample_t));
             // Esperar tiempo deseado antes de próxima transmisión
             usleep(DELAY_US);
         }
