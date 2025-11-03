@@ -22,7 +22,7 @@ CPU_CORE = 2        # Núcleo donde se fijará la afinidad
 RT_PRIORITY = 95    # Prioridad SCHED_FIFO
 
 # Regla por defecto
-all: clean compile run-rt $(TARGET)
+all: clean compile run $(TARGET)
 
 compile: $(TARGET)
 # Compilar el ejecutable
@@ -36,7 +36,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Ejecutar normalmente
 run:
-	./$(TARGET)
+	sudo ./$(TARGET)
 
 # Ejecutar en tiempo real (SCHED_FIFO + afinidad de CPU)
 run-rt: $(TARGET)

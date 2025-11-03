@@ -9,6 +9,13 @@
 #include <string.h>       // Usada para funciones como memcpy.
 #include "bladerf_config.h" // Usada para configuraciones específicas de BladeRF.
 #include "lcd_i2c.h"      // Usada para funciones relacionadas con el LCD.
+#include <signal.h>
+
+volatile sig_atomic_t stop = 0;
+
+void handle_sigint(int sig){
+    stop = 1 ;
+}
 
 #if SAMPLE_BITS == 8
 typedef int8_t sample_t;
@@ -22,6 +29,8 @@ int main(void)
 {
     struct bladerf *dev = NULL;
     int status;
+
+    signal(SIGINT, handle_sigint);
 
     /*===================== Inicializar Display =====================*/
     lcd_start_i2c();
@@ -215,7 +224,7 @@ int main(void)
     if (TRIGGER_EN) {
         display_status("Esperando Trig...");usleep(DISPLAY_DELAY); 
 
-        while (status == 0) { 
+        while ((status == 0)&!stop) { 
             //Armar trigger para esperar el pulso externo
             status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
 
@@ -235,7 +244,7 @@ int main(void)
     }else{
         display_status("Transmitiendo..."); 
         /* Loop principal: transmitir repetidamente con retardo */
-        while (status == 0) {
+        while ((status == 0)&!stop) {
             status = bladerf_sync_tx(dev, waveform[chirp_idx], WAVEFORM_LEN / 2, NULL, 0);
             if (status != 0) {
                 fprintf(stderr, "Error transmitiendo: %s\n", bladerf_strerror(status));
@@ -263,9 +272,9 @@ int main(void)
     bladerf_close(dev);
 
     // Limpieza del LCD
-    display_status("Hecho.");usleep(DISPLAY_DELAY);
-    sleep(1);
     lcd_clear();
+    display_status("EchoSim");usleep(DISPLAY_DELAY);
+    sleep(1);
     close_i2c();
 
     return (status == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
