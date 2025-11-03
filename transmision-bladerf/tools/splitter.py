@@ -10,7 +10,7 @@ import shutil
 START_INDEX = 1000 
 END_INDEX   = 2000 # -1 para procesar hasta el final
 inFileI = "radar_capture/W616T48104495_canal_vv_I.bin"  # Archivo I a procesar
-inFileQ = "radar_capture/signals/W616T48104495_canal_vh_Q.bin"  # Archivo Q a procesar
+inFileQ = "radar_capture/W616T48104495_canal_vh_Q.bin"  # Archivo Q a procesar
 
 fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 fs  = 38e6          # Frecuencia de muestreo
