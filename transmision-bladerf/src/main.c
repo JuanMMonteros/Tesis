@@ -159,7 +159,7 @@ int main(void)
             return EXIT_FAILURE;
         }
     
-        size_t to_read = samples_per_chirp * sizeof(sample_t);
+        size_t to_read = samples_per_chirp * 2* sizeof(sample_t);
         size_t read = fread(waveform[i], 1, to_read, f);
         if (read != to_read) {
             display_error("Error: Fread chirp", CHIRP_FILE);
