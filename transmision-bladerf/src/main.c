@@ -90,17 +90,11 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    /*============ Pre-cargar la forma de onda en memoria =============*/
-    display_status("Cargando Waveform"); usleep(DISPLAY_DELAY);
-
-    sample_t *waveform = calloc(WAVEFORM_LEN, sizeof(sample_t));  // WAVEFORM_LEN es el tamaño total
-    if (!waveform) {
-        display_error("Error: Malloc WF", NULL);
-        bladerf_close(dev);
-        close_i2c();
-        return EXIT_FAILURE;
-    }
-
+    /*============ Pre-cargar la forma de onda en memoria =============*/ 
+    display_status("Cargando Waveforms"); 
+    usleep(DISPLAY_DELAY);
+    
+    /*============ Apertura del archivo ============*/
     FILE *f = fopen(CHIRP_FILE, "rb");
     if (!f) {
         display_error("Error: Abrir F", CHIRP_FILE);
@@ -108,8 +102,8 @@ int main(void)
         close_i2c();
         return EXIT_FAILURE;
     }
-
-    /* Ir al final para saber tamaño */
+    
+    /*============ Determinar tamaño del archivo ============*/
     if (fseek(f, 0, SEEK_END) != 0) {
         display_error("Error: Fseek", NULL);
         fclose(f);
@@ -117,7 +111,7 @@ int main(void)
         close_i2c();
         return EXIT_FAILURE;
     }
-
+    
     long file_size = ftell(f);
     if (file_size <= 0 || file_size % (2 * sizeof(sample_t)) != 0) {
         display_error("Error: FileSize", NULL);
@@ -127,8 +121,8 @@ int main(void)
         return EXIT_FAILURE;
     }
     rewind(f);
-
-    /* Calcular muestras totales y por chirp */
+    
+    /*============ Calcular muestras totales y por chirp ============*/
     size_t total_samples = file_size / (2 * sizeof(sample_t));
     if (total_samples % NUM_CHIRPS != 0) {
         display_error("Error: File no divisible", NULL);
@@ -137,56 +131,53 @@ int main(void)
         close_i2c();
         return EXIT_FAILURE;
     }
-
+    
     size_t samples_per_chirp = total_samples / NUM_CHIRPS;
-    printf("samples_per chirp: %d , total samples: %d , WAVEFORM %d\n", (int)samples_per_chirp, (int)total_samples,WAVEFORM_LEN/2);
-    if (samples_per_chirp > WAVEFORM_LEN/2) {
-        display_error("Error: Bufer len", NULL);
+    printf("samples_per_chirp: %zu , total_samples: %zu , WAVEFORM_LEN: %d\n",
+           samples_per_chirp, total_samples, WAVEFORM_LEN);
+    
+    /*============ Asignar memoria para cada waveform ============*/
+    sample_t **waveform = calloc(NUM_CHIRPS, sizeof(sample_t *));
+    if (!waveform) {
+        display_error("Error: Malloc waveform[]", NULL);
         fclose(f);
         bladerf_close(dev);
         close_i2c();
         return EXIT_FAILURE;
     }
-
-    /* Crear arreglo de punteros */
-    sample_t **chirps = calloc(NUM_CHIRPS, sizeof(sample_t *));
-    if (!chirps) {
-        display_error("Error: Malloc chirps[]", NULL);
-        fclose(f);
-        bladerf_close(dev);
-        close_i2c();
-        return EXIT_FAILURE;
-    }
-
-    /* Leer cada chirp individualmente */
+    
+    /*============ Leer chirps individuales ============*/
     for (int i = 0; i < NUM_CHIRPS; i++) {
-        chirps[i] = calloc(samples_per_chirp, sizeof(sample_t));
-        if (!chirps[i]) {
-            display_error("Error: Malloc chirp", NULL);
-            // liberar todo lo que se haya reservado hasta ahora
-            for (int j = 0; j < i; j++) free(chirps[j]);
-            free(chirps);
+        waveform[i] = calloc(WAVEFORM_LEN, sizeof(sample_t));
+        if (!waveform[i]) {
+            display_error("Error: Malloc waveform[i]", NULL);
+            for (int j = 0; j < i; j++) free(waveform[j]);
+            free(waveform);
             fclose(f);
             bladerf_close(dev);
             close_i2c();
             return EXIT_FAILURE;
         }
-
-        size_t bytes_to_read = samples_per_chirp * sizeof(sample_t);
-        size_t read = fread(chirps[i], 1, bytes_to_read, f);
-        if (read != bytes_to_read) {
+    
+        size_t to_read = samples_per_chirp * sizeof(sample_t);
+        size_t read = fread(waveform[i], 1, to_read, f);
+        if (read != to_read) {
             display_error("Error: Fread chirp", CHIRP_FILE);
-            for (int j = 0; j <= i; j++) free(chirps[j]);
-            free(chirps);
+            for (int j = 0; j <= i; j++) free(waveform[j]);
+            free(waveform);
             fclose(f);
             bladerf_close(dev);
             close_i2c();
             return EXIT_FAILURE;
         }
+    
+        // Si el chirp es menor que WAVEFORM_LEN, el resto ya está en 0 (calloc)
     }
-
+    
     fclose(f);
-    display_status("Waveform OK"); usleep(DISPLAY_DELAY);
+    display_status("Waveforms OK");
+    usleep(DISPLAY_DELAY);
+    
     
     /*====================== Habilitar módulo TX ======================*/
     status = bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), true);
@@ -219,10 +210,6 @@ int main(void)
     bool fired = false;
     bool is_armed = false;
     bool fired_req = false;
-    
-    
-    // Copiar el chirp completo al inicio del buffer
-    memcpy(waveform, chirps[0], samples_per_chirp * 2 * sizeof(sample_t));
     int chirp_idx=0; 
 
     if (TRIGGER_EN) {
@@ -233,12 +220,11 @@ int main(void)
             status = bladerf_trigger_arm(dev, &trigger, true, 0, 0);
 
             //Transmitir chirp 
-            status = bladerf_sync_tx(dev, waveform, WAVEFORM_LEN / 2, NULL, 0);
+            status = bladerf_sync_tx(dev, waveform[chirp_idx], WAVEFORM_LEN / 2, NULL, 0);
             
             //Actualizar al siguiente chirp
             chirp_idx = (chirp_idx + 1) % NUM_CHIRPS;
-            memcpy(waveform, chirps[chirp_idx], samples_per_chirp * 2 * sizeof(sample_t));
-            
+
             //One-shot: esperar a que el pulso del trigger cambie su estado
             usleep(DELAY_US);  // Ajustar según el ancho del pulso de trigger
             do {

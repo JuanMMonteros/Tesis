@@ -13,7 +13,7 @@ fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 plot_en = True
 config_override_en = True
 
-potencia = 1.0 # Potencia de la señal
+potencia = 0.8 # Potencia de la señal
 phase = 2*np.pi*0/np.pi # Fase inicial en radianes
 delay = 10e-6  # Retardo antes del chirp
 

@@ -6,7 +6,7 @@
 //Ajuste one shot o retardo entre transmisiones
 #define DELAY_US 2000  // us
 // 1 para habilitar trigger externo, 0 para deshabilitar
-#define TRIGGER_EN 0 
+#define TRIGGER_EN 1
 
 // Define para cambiar entre SC8_Q7 (8 bits) y SC16_Q11 (16 bits)
 #define SAMPLE_BITS 16
