@@ -9,6 +9,8 @@ transmision_bladerf
 obj/
 # Directorio de binarios
 bin/
+# Directorio de capturas radar
+radar_capture/
 
 # Archivos temporales
 *~

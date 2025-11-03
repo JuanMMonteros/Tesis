@@ -123,7 +123,7 @@ def export_to_header():
         f.write(f"#undef SAMPLE_BITS\n#define SAMPLE_BITS  {8 if fmt=='SC8_Q7' else 16}\n\n")
         f.write(f"#undef SAMPLE_RATE\n#define SAMPLE_RATE  {int(fs)}\n\n")
         f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE  "{filename}"\n\n')
-        f.write(f'#undef NUM_CHIRPS\n#define NUM_CHIRPS  1"\n\n')
+        f.write(f'#undef NUM_CHIRPS\n#define NUM_CHIRPS  1\n\n')
 
         if(t_chirp * fs + muestras_delay < 8192):
             f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")

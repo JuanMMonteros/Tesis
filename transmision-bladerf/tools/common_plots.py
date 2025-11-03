@@ -82,7 +82,7 @@ def plot_psd(signal, fs):
 
 
 
-signal=load_complex_signal("./bin/my_chirpL.bin", sample_bits=16)
+signal=load_complex_signal("./split_files/chirp_000500.bin", sample_bits=16)
 plot_IQ(signal, 38e6)
 plot_fft(signal, 38e6)
 plot_psd(signal, 38e6)
