@@ -5,9 +5,9 @@ import os
 # ==============================
 # Parámetros del chirp
 # ==============================
-f_start = -5e6
-f_end   = 5e6
-t_chirp = 10e-6
+f_start = -19e6
+f_end   = 19e6
+t_chirp = 100e-6
 fs      = 60e6
 fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 plot_en = False
@@ -15,14 +15,14 @@ config_override_en = True
 
 potencia = 0.8       # Potencia de la señal
 phase = 0            # Fase inicial en radianes
-delay =0e-6        # Retardo antes del chirp
+delay =25e-6        # Retardo antes del chirp
 delay_calibracion = 0#0.385e-6  # Retardo de calibración 
 
 # ==============================
 # Parámetros avanzados
 # ==============================
-N_chirps = 5  # Número de chirps a generar
-phase_increment_deg = 72  # Incremento de fase en grados por chirp
+N_chirps = 20000  # Número de chirps a generar
+phase_increment_deg = 0.02  # Incremento de fase en grados por chirp
 chirp_direction = 'down'  # 'up' o 'down' - Dirección del chirp
 
 # ==============================
@@ -144,12 +144,12 @@ def export_to_header():
         f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE  "{filename}"\n\n')
         f.write(f'#undef NUM_CHIRPS\n#define NUM_CHIRPS  {N_chirps}\n\n')
 
-        if(t_chirp * fs + muestras_delay < 8192):
+        if(t_chirp * fs + muestras_delay < 4096):
             f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
             f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
-        elif(t_chirp * fs + muestras_delay < 16384):
-            f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
-            f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  4\n\n")
+        elif(t_chirp * fs + muestras_delay < 8192):
+            f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  8192\n\n")
+            f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
         else:
             raise ValueError("El chirp generado es demasiado largo para el buffer")
 

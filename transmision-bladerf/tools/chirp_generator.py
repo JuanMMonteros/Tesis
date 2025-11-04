@@ -125,12 +125,12 @@ def export_to_header():
         f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE  "{filename}"\n\n')
         f.write(f'#undef NUM_CHIRPS\n#define NUM_CHIRPS  1\n\n')
 
-        if(t_chirp * fs + muestras_delay < 8192):
+        if(t_chirp * fs + muestras_delay < 4096):
             f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
             f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
-        elif(t_chirp * fs + muestras_delay < 16384):
-            f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
-            f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  4\n\n")
+        elif(t_chirp * fs + muestras_delay < 8192):
+            f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  8192\n\n")
+            f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
         else:
             raise ValueError("El chirp generado es demasiado largo para el buffer")
 

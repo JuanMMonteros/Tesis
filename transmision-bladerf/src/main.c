@@ -13,7 +13,7 @@
 
 volatile sig_atomic_t stop = 0;
 
-void handle_sigint(int sig){
+void handle_sigint(int _){
     stop = 1 ;
 }
 
