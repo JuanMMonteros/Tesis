@@ -1,32 +1,32 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import os 
+import numpy as np              # Para cálculos numéricos
+import matplotlib.pyplot as plt # Para gráficas
+import os                       # Para operaciones con el sistema de archivos
 
 # ==============================
 # Parámetros del chirp
 # ==============================
-f_start = -19e6
-f_end   = 19e6
-t_chirp = 10e-6
-fs      = 60e6
-fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
-plot_en = True
-config_override_en = True
+f_start = -19e6             # Frecuencia inicial
+f_end   = 19e6              # Frecuencia final
+t_chirp = 10e-6             # Duración del chirp
+fs      = 60e6              # Frecuencia de muestreo
+fmt = 'SC16_Q11'            # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 
-potencia = 0.8 # Potencia de la señal
-phase = 2*np.pi*0/np.pi # Fase inicial en radianes
-delay = 10e-6  # Retardo antes del chirp
+potencia = 0.8              # Potencia de la señal
+phase = 2*np.pi*0/np.pi     # Fase inicial en radianes
+delay = 10e-6               # Retardo antes del chirp
+delay_calibracion = 0.385e-6# Retardo de calibración
 
-delay_calibracion = 0.385e-6  # Retardo de calibración 
+plot_en = True              # Habilitar/deshabilitar gráfica
+config_override_en = True   # Habilitar/deshabilitar generación config_override.h
 
 # ==============================
-# Generacion Chirp
+# Generacion Chirp float
 # ==============================
-muestras_delay = int(np.floor( (delay - delay_calibracion) * fs))
-amplitud = np.sqrt(potencia)
-samples_per_chirp = int(np.floor(t_chirp * fs))
+muestras_delay = int(np.floor( (delay - delay_calibracion) * fs)) # Muestras de retardo
+amplitud = np.sqrt(potencia) # Amplitud de la señal
+samples_per_chirp = int(np.floor(t_chirp * fs)) # Muestras por chirp
 
-f1, f2 = f_start, f_end
+f1, f2 = f_start, f_end # Frecuencias inicial y final
 
 # Vector de tiempo
 t = np.arange(samples_per_chirp) / fs
@@ -168,6 +168,7 @@ print(f"Archivo: {filename}")
 print(f"Formato: {fmt}")
 print(f"Muestras complejas guardadas: {num_complex}")
 print(f"Tamaño total del archivo: {file_size} bytes")
+print(f"Potencia señal: {potencia:.2f}")
 print(f"SNR de cuantización: {SNR_dB:.2f} dB")
 print(f"Delay: {delay*1e6:.3f} µs")
 print(f"Calibración delay: {delay_calibracion*1e6:.3f} µs")

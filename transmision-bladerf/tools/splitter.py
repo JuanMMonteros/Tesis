@@ -7,24 +7,31 @@ import shutil
 
 # ==============================
 # Configuración       
-START_INDEX = 1000 
-END_INDEX   = 2000 # -1 para procesar hasta el final
+START_INDEX = 1000  # Índice inicial para la concatenación
+END_INDEX   = 2000  # Índice final para la concatenación (-1 para todos)
 inFileI = "radar_capture/W616T48104495_canal_vv_I.bin"  # Archivo I a procesar
 inFileQ = "radar_capture/W616T48104495_canal_vh_Q.bin"  # Archivo Q a procesar
 
-fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
-fs  = 38e6          # Frecuencia de muestreo
+fmt = 'SC16_Q11'       # Cambiar a 'SC8_Q7' o 'SC16_Q11'
+fs  = 38e6             # Frecuencia de muestreo
 nElementsCount = 4096  # cantidad de muestras por archivo a dividir
-OFFSET = 6.0        # valor de offset a restar a las muestras
+potencia = 1.5         # Potencia de la señal
+OFFSET = 6.0           # valor de offset a restar a las muestras
+delay = 10e-6          # Retardo antes del chirp
+delay_calibracion = 0.385e-6  # Retardo de calibración 
 
-plot_en = False
+carpeta_origen = "./bin/split_files" # Carpeta donde se guardarán los archivos divididos
+DELETE_SPLIT_FILES = False  # Borrar carpeta de archivos divididos después de la concatenación  
+carpeta_destino = "./bin" # Carpeta donde se guardará el archivo concatenado
+
+config_override_en = True  # Generar config_override.h
+plot_en = False # Habilitar gráfico de salida I/Q
 samplesToGraphic = 3800000  # cantidad de muestras a graficar
-
-carpeta_origen = "./bin/split_files"
-DELETE_SPLIT_FILES = True
-carpeta_destino = "./bin"
 # ==============================
 
+muestras_delay = int(np.floor( (delay - delay_calibracion) * fs)) # Muestras de delay
+
+# Función para borrar carpeta de archivos divididos
 def borrar_split_files(carpeta_origen="./bin/split_files"):
     """
     Borra la carpeta de archivos divididos (split_files) sin afectar otros directorios.
@@ -38,7 +45,7 @@ def borrar_split_files(carpeta_origen="./bin/split_files"):
     else:
         print(f"No existe la carpeta: {carpeta_origen}")
 
-
+# Función para graficar salida I/Q
 def drawOutput(dataI, dataQ, dataOut, samplesToGraphic):
     """Dibuja la salida del complejo combinado con I/Q"""
     samples = min(samplesToGraphic, len(dataI))
@@ -55,7 +62,7 @@ def drawOutput(dataI, dataQ, dataOut, samplesToGraphic):
     plt.tight_layout()
     plt.show()
 
-
+# Función principal para dividir archivos
 def splitFiles(inFileI, inFileQ, nElementsCount=4096, offset=6.0):
     """Procesa el archivo I y Q y los divide en archivos más pequeños"""
     print("Dividiendo archivos I/Q...")
@@ -88,12 +95,20 @@ def splitFiles(inFileI, inFileQ, nElementsCount=4096, offset=6.0):
 
         chunk = dataOut[inicio:fin]
         nombre_archivo = Path(carpeta_origen) / f"chirp_{i}.bin"
-        save_sc(nombre_archivo, chunk, fmt=fmt)
+
+        # Agregar delay
+        y_delay = np.zeros(muestras_delay, dtype=complex)
+        y_chirp = np.concatenate((y_delay, chunk))
+        # Ajustar potencia
+        amplitud = np.sqrt(potencia)
+        y_chirp = amplitud * y_chirp
+            
+        save_sc(nombre_archivo, y_chirp, fmt=fmt)
 
     print(f"Proceso completo. Total de archivos creados: {num_archivos}")
     return dataOut
 
-
+# Función para guardar señal compleja en formato SC8_Q7 o SC16_Q11
 def save_sc(filename, x, fmt='SC16_Q11'):
     """Guarda una señal compleja en formato SC8_Q7 o SC16_Q11."""
     if not np.iscomplexobj(x):
@@ -123,7 +138,7 @@ def save_sc(filename, x, fmt='SC16_Q11'):
     interleaved.tofile(filename)
     return len(x), np.dtype(dtype).itemsize
 
-
+# Función para concatenar archivos binarios
 def concatenar_bins(carpeta_origen, carpeta_destino, archivo_inicial):
     """Concatena los binarios divididos en uno solo."""
     # Crear carpeta destino si no existe
@@ -165,7 +180,7 @@ def concatenar_bins(carpeta_origen, carpeta_destino, archivo_inicial):
     print(f"{len(partes)} concatenaciones completadas de {tamaños[0]} bytes ({my_samples} samples). Archivo de salida: {salida}")
     return len(partes)
 
-
+# Función para exportar configuración a header
 def export_to_header(chirps):
     """Crea config_override.h con la configuración del chirp generado"""
     header_path = "./src/config_override.h"
@@ -183,10 +198,10 @@ def export_to_header(chirps):
         f.write(f'#undef CHIRP_FILE\n#define CHIRP_FILE  "chirp_concat.bin"\n\n')
         f.write(f'#undef NUM_CHIRPS\n#define NUM_CHIRPS  {chirps}\n\n')
 
-        if nElementsCount < 8192:
+        if muestras_delay + nElementsCount < 8192:
             f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  4096\n\n")
             f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
-        elif nElementsCount < 16384:
+        elif muestras_delay + nElementsCount < 16384:
             f.write(f"#undef TX_SAMPLES_PER_BUF\n#define TX_SAMPLES_PER_BUF  8192\n\n")
             f.write(f"#undef TX_NUM_BUFFERS\n#define TX_NUM_BUFFERS  2\n\n")
         else:
@@ -197,18 +212,36 @@ def export_to_header(chirps):
 
     print(f"Header generado en: {header_path}")
 
-
+# Ejecutar el proceso completo
 if __name__ == "__main__":
     try:
+        print("\n--------------------------------------------------------------------")
+        print("REPORTE:\n")
         # Crear estructura de carpetas si no existen
         Path(carpeta_destino).mkdir(parents=True, exist_ok=True)
         Path(carpeta_origen).mkdir(parents=True, exist_ok=True)
 
         splitFiles(inFileI, inFileQ, nElementsCount, OFFSET)
-        num_chirps = concatenar_bins(carpeta_origen, carpeta_destino, "chirp_0.bin")
-        export_to_header(num_chirps)
+        num_chirps = concatenar_bins(carpeta_origen, carpeta_destino, "chirp_0.bin")   
+
+        # --- Mostrar resultados ---
+        print(f"Archivo salida: {carpeta_destino}/chirp_concat.bin") 
+        print(f"Formato: {fmt}")
+        print(f"Delay: {delay*1e6:.3f} µs")
+        print(f"Calibración delay: {delay_calibracion*1e6:.3f} µs")
+        print(f"Potencia señal: {potencia} dB")
+
+        if config_override_en:
+            export_to_header(num_chirps)
+        else:
+            print(f"Advertencia: autogeneración de config_override.h desactivada")
+
         if DELETE_SPLIT_FILES:
             borrar_split_files(carpeta_origen)
+        else:
+            print(f"Archivos divididos conservados en: {carpeta_origen}")
+
+        print("--------------------------------------------------------------------\n")
     except FileNotFoundError as e:
         print(f"Error: {e}")
         print("FileNotFoundError")

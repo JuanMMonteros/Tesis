@@ -1,36 +1,35 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import os 
+import numpy as np              # Para cálculos numéricos
+import matplotlib.pyplot as plt # Para gráficas
+import os                       # Para operaciones del sistema de archivos
 
 # ==============================
 # Parámetros del chirp
 # ==============================
-f_start = -19e6
-f_end   = 19e6
-t_chirp = 100e-6
-fs      = 60e6
-fmt = 'SC16_Q11'    # Cambiar a 'SC8_Q7' o 'SC16_Q11'
-plot_en = False
-config_override_en = True
+f_start = -19e6             # Frecuencia inicial
+f_end   = 19e6              # Frecuencia final
+t_chirp = 100e-6            # Duración del chirp
+fs      = 60e6              # Frecuencia de muestreo
+fmt = 'SC16_Q11'            # Cambiar a 'SC8_Q7' o 'SC16_Q11'
 
-potencia = 0.8       # Potencia de la señal
-phase = 0            # Fase inicial en radianes
-delay =25e-6        # Retardo antes del chirp
-delay_calibracion = 0#0.385e-6  # Retardo de calibración 
+potencia = 0.8              # Potencia de la señal
+delay =25e-6                # Retardo antes del chirp
+delay_calibracion = 0.385e-6# Retardo de calibración 
 
-# ==============================
-# Parámetros avanzados
-# ==============================
-N_chirps = 20000  # Número de chirps a generar
+N_chirps = 10            # Número de chirps a generar
+phase = 0                   # Fase inicial en radianes
 phase_increment_deg = 0.02  # Incremento de fase en grados por chirp
-chirp_direction = 'down'  # 'up' o 'down' - Dirección del chirp
+chirp_direction = 'down'    # 'up' o 'down' - Dirección del chirp
+
+plot_en = False             # Habilitar/deshabilitar gráficas
+config_override_en = True   # Habilitar/deshabilitar autogeneración config_override.h
+
 
 # ==============================
-# Generacion Chirp
+# Generacion Chirp flotante con fase incremental
 # ==============================
-samples_per_chirp = int(np.floor(t_chirp * fs))
-muestras_delay = int(np.floor((delay - delay_calibracion) * fs))
-amplitud = np.sqrt(potencia)
+samples_per_chirp = int(np.floor(t_chirp * fs)) # Muestras por chirp
+muestras_delay = int(np.floor((delay - delay_calibracion) * fs)) # Muestras de retardo
+amplitud = np.sqrt(potencia) # Amplitud de la señal
 
 # Vector de tiempo para un chirp
 t = np.arange(samples_per_chirp) / fs
@@ -172,7 +171,7 @@ x_q = load_sc(filename, fmt=fmt)
 file_size = os.path.getsize(filename)
 num_complex = file_size // (2 * bytes_per_sample)
 
-# --- Calcular SNR ---
+# --- Calcular SNR cuantizacion ---
 error = y_chirps - x_q
 P_signal = np.mean(np.abs(y_chirps)**2)
 P_error = np.mean(np.abs(error)**2)
@@ -187,6 +186,7 @@ print(f"Tipo de chirp: {chirp_type_name}")
 print(f"Muestras complejas guardadas: {num_complex}")
 print(f"Tamaño total del archivo: {file_size} bytes")
 print(f"SNR de cuantización: {SNR_dB:.2f} dB")
+print(f"Potencia de la señal: {potencia:.2f}")
 print(f"Delay: {delay*1e6:.3f} µs")
 print(f"Calibración delay: {delay_calibracion*1e6:.3f} µs")
 print(f"Incremento de fase por chirp: {phase_increment_deg}°")

@@ -1,19 +1,20 @@
 #ifndef LCD_I2C_H
 #define LCD_I2C_H
 
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <unistd.h> // Usada para usleep()
+#include <stdio.h>  // Usada para perror()
+#include <stdlib.h> // Usada para exit()
 
-// Activa o desactiva el uso del LCD a nivel de compilación
-#define DISPLAY_EN 1
+//===============================================================
+#define DISPLAY_EN 1 // Activa o desactiva el uso del LCD a nivel de compilación
+//===============================================================
 
-#if DISPLAY_EN
+#if DISPLAY_EN             // Si la pantalla está habilitada
 
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/i2c-dev.h>
-#include <string.h>
+#include <fcntl.h>         // Usada para open()
+#include <sys/ioctl.h>     // Usada para ioctl()
+#include <linux/i2c-dev.h> // Usada para definiciones I2C
+#include <string.h>        // Usada para strncpy()
 
 // Retardo para visualización en LCD
 #define DISPLAY_DELAY 500000 
@@ -25,10 +26,10 @@
 #define I2C_BUS "/dev/i2c-1"
 
 // Constantes del LCD
-#define LCD_CHR 1        // Enviar datos
-#define LCD_CMD 0        // Enviar comando
-#define LINEA_1 0x80     // Dirección DDRAM de línea 1
-#define LINEA_2 0xC0     // Dirección DDRAM de línea 2
+#define LCD_CHR 1          // Enviar datos
+#define LCD_CMD 0          // Enviar comando
+#define LINEA_1 0x80       // Dirección DDRAM de línea 1
+#define LINEA_2 0xC0       // Dirección DDRAM de línea 2
 #define LCD_BACKLIGHT 0x08 // Bit para luz de fondo
 
 // Descriptor de archivo del bus I2C
@@ -59,12 +60,15 @@ static inline void lcd_display_string(const char *str, int line) {
     (void)str;
     (void)line;
 }
+// Mensajes por consola si no hay LCD
 static inline void display_status(const char *msg) {
-    (void)msg;
+    printf("%s\n", msg);
 }
 static inline void display_error(const char *msg, const char *detail) {
-    (void)msg;
-    (void)detail;
+    if (detail)
+        fprintf(stderr, "%s - %s\n", msg, detail);
+    else
+        fprintf(stderr, "%s\n", msg);
 }
 // Retardo para visualización en LCD
 #define DISPLAY_DELAY 0

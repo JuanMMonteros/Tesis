@@ -1,9 +1,12 @@
-import os
-import re
+import os # Manejo de archivos
+import re # Expresiones regulares
 
-carpeta_origen = "./bin"
-carpeta_destino = "./bin"
-archivo_inicial = "chirp_SC16_Q11_0.bin"
+# ==============================
+# Configuración
+carpeta_origen = "./bin"                 # Carpeta donde están los archivos a concatenar
+carpeta_destino = "./bin"                # Carpeta donde se guardará el archivo concatenado
+archivo_inicial = "chirp_SC16_Q11_0.bin" # Nombre del primer archivo a concatenar (termina en _x.bin)
+# ==============================
 
 def concatenar_bins(carpeta_origen, carpeta_destino, archivo_inicial):
     # Construir la ruta completa del archivo inicial
@@ -55,4 +58,4 @@ if __name__ == "__main__":
     try:
         concatenar_bins(carpeta_origen, carpeta_destino, archivo_inicial)
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")

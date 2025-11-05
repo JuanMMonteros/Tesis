@@ -1,10 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-from numpy.fft import fft, fftshift, fftfreq
-from scipy.signal import get_window, welch
+import numpy as np                           # Manejo de arreglos numéricos
+import matplotlib.pyplot as plt              # Graficación
+import os                                    # Manejo de rutas de archivos
+from numpy.fft import fft, fftshift, fftfreq # Transformadas rápidas de Fourier
+from scipy.signal import get_window, welch   # Ventanas y estimación de PSD
 
-
+# Funciones para cargar y graficar señales complejas desde archivos binarios
 def load_complex_signal(path, sample_bits=16):
     """Carga el archivo binario y devuelve la señal compleja."""
     if not os.path.exists(path):
@@ -17,7 +17,7 @@ def load_complex_signal(path, sample_bits=16):
     signal = real + 1j * imag
     return signal
 
-
+# Funciones de graficación
 def plot_IQ(signal, fs):
     """Grafica la parte real e imaginaria de la señal en el tiempo."""
     num_samples = len(signal)
@@ -42,7 +42,7 @@ def plot_IQ(signal, fs):
     plt.tight_layout()
     plt.show()
 
-
+# Funciones de graficación del espectro
 def plot_fft(signal, fs, alpha=0.05):
     """Calcula y grafica el espectro usando FFT y ventana Tukey."""
     N = len(signal)
@@ -60,7 +60,7 @@ def plot_fft(signal, fs, alpha=0.05):
     plt.tight_layout()
     plt.show()
 
-
+# Funciones de graficación de la Densidad Espectral de Potencia
 def plot_psd(signal, fs):
     """Calcula y grafica la Densidad Espectral de Potencia (PSD)."""
     nperseg = min(4096, len(signal))
@@ -81,8 +81,8 @@ def plot_psd(signal, fs):
     plt.show()
 
 
-
-signal=load_complex_signal("./split_files/chirp_000500.bin", sample_bits=16)
+# Ejemplo de uso
+signal=load_complex_signal("./bin/split_files/chirp_550.bin", sample_bits=16)
 plot_IQ(signal, 38e6)
 plot_fft(signal, 38e6)
 plot_psd(signal, 38e6)

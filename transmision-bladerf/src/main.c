@@ -1,22 +1,17 @@
-#include <stdlib.h>       // Usada para funciones como malloc, calloc, free, EXIT_FAILURE, etc.
-#include <stdbool.h>      // Usada para el tipo `bool`.
-#include <stdint.h>       // Usada para tipos como `int8_t`, `int16_t`.
-#include <unistd.h>       // Usada para funciones como usleep, sleep.
-#include <stdio.h>        // Usada para funciones como printf, fprintf, fopen, fclose.
-#include <time.h>         // Usada para nanosleep (pero no se utiliza en el código actual).
-#include <libbladeRF.h>   // Usada para la API de BladeRF.
-#include <math.h>         // No se utiliza en el código actual.
-#include <string.h>       // Usada para funciones como memcpy.
+#include <stdlib.h>         // Usada para funciones como malloc, calloc, free, EXIT_FAILURE, etc.
+#include <stdbool.h>        // Usada para el tipo `bool`.
+#include <stdint.h>         // Usada para tipos como `int8_t`, `int16_t`.
+#include <unistd.h>         // Usada para funciones como usleep, sleep.
+#include <stdio.h>          // Usada para funciones como printf, fprintf, fopen, fclose.
+#include <time.h>           // Usada para nanosleep (pero no se utiliza en el código actual).
+#include <libbladeRF.h>     // Usada para la API de BladeRF.
+#include <math.h>           // No se utiliza en el código actual.
+#include <string.h>         // Usada para funciones como memcpy.
 #include "bladerf_config.h" // Usada para configuraciones específicas de BladeRF.
-#include "lcd_i2c.h"      // Usada para funciones relacionadas con el LCD.
-#include <signal.h>
+#include "lcd_i2c.h"        // Usada para funciones relacionadas con el LCD.
+#include <signal.h>         // Usada para manejo de señales como SIGINT.
 
-volatile sig_atomic_t stop = 0;
-
-void handle_sigint(int _){
-    stop = 1 ;
-}
-
+// Define tamaño sample en bytes
 #if SAMPLE_BITS == 8
 typedef int8_t sample_t;
 #elif SAMPLE_BITS == 16
@@ -25,12 +20,20 @@ typedef int16_t sample_t;
 #error "SAMPLE_BITS debe ser 8 o 16"
 #endif
 
+/*===================== Interruptor Programa =====================*/
+volatile sig_atomic_t stop = 0;
+void handle_sigint(int _){
+    (void)_;  // Marca el parámetro como usado, evita el warning
+    stop = 1 ;
+}
+/*================================================================*/
+
 int main(void)
 {
-    struct bladerf *dev = NULL;
-    int status;
+    signal(SIGINT, handle_sigint); // Captura Ctrl+C para detener el programa
 
-    signal(SIGINT, handle_sigint);
+    struct bladerf *dev = NULL;    // Puntero al dispositivo BladeRF
+    int status;                    // Variable para almacenar códigos de estado
 
     /*===================== Inicializar Display =====================*/
     lcd_start_i2c();
@@ -38,7 +41,7 @@ int main(void)
     display_status("Iniciando..."); usleep(DISPLAY_DELAY);
 
     /*===================== Abrir dispositivo =======================*/
-    status = bladerf_open(&dev, DEVICE_IDENTIFIER);
+    status = bladerf_open(&dev, DEVICE_IDENTIFIER); // Abrir dispositivo BladeRF
     if (status != 0) {
         display_error("Error: OpenDev", bladerf_strerror(status));
         close_i2c(); // Cerrar LCD
@@ -49,7 +52,7 @@ int main(void)
     /*======================= Config RF basica ========================*/
     printf("smaple rate : %dMHZ\n",SAMPLE_RATE);
     unsigned int actual_sr = 0;
-    status = bladerf_set_sample_rate(dev, BLADERF_CHANNEL_TX(0), SAMPLE_RATE, &actual_sr);
+    status = bladerf_set_sample_rate(dev, BLADERF_CHANNEL_TX(0), SAMPLE_RATE, &actual_sr); // Configurar tasa de muestreo
     if (status != 0) {
         display_error("Error: SampRate", bladerf_strerror(status));
         bladerf_close(dev);
@@ -57,7 +60,7 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    status = bladerf_set_frequency(dev, BLADERF_CHANNEL_TX(0), CENTER_FREQUENCY);
+    status = bladerf_set_frequency(dev, BLADERF_CHANNEL_TX(0), CENTER_FREQUENCY); // Configurar frecuencia central
     if (status != 0) {
         display_error("Error: Freq", bladerf_strerror(status));
         bladerf_close(dev);
@@ -65,7 +68,7 @@ int main(void)
         return EXIT_FAILURE;
     }
     
-    status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_TX(0),BANDWIDTH,NULL);
+    status = bladerf_set_bandwidth(dev,BLADERF_CHANNEL_TX(0),BANDWIDTH,NULL); // Configurar ancho de banda
     if (status != 0) {
         display_error("Error: Bandwidth", bladerf_strerror(status));
         bladerf_close(dev);
@@ -73,7 +76,7 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    status = bladerf_set_gain(dev, BLADERF_CHANNEL_TX(0), TX_GAIN);
+    status = bladerf_set_gain(dev, BLADERF_CHANNEL_TX(0), TX_GAIN); // Configurar ganancia de transmisión
     if (status != 0) {
         display_error("Error: TX Gain", bladerf_strerror(status));
         bladerf_close(dev);
@@ -91,7 +94,7 @@ int main(void)
                                  TX_NUM_BUFFERS,
                                  TX_SAMPLES_PER_BUF,
                                  TX_NUM_XFERS,
-                                 STREAM_TIMEOUT_MS);
+                                 STREAM_TIMEOUT_MS); // Configurar interfaz síncrona TX
     if (status != 0) {
         display_error("Error: Sync TX", bladerf_strerror(status));
         bladerf_close(dev);
@@ -189,7 +192,7 @@ int main(void)
     
     
     /*====================== Habilitar módulo TX ======================*/
-    status = bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), true);
+    status = bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), true); // Habilitar TX
     if (status != 0) {
         display_error("Error: Enable TX", bladerf_strerror(status));
         free(waveform);
@@ -203,7 +206,7 @@ int main(void)
     status = bladerf_trigger_init(dev,
                                   BLADERF_CHANNEL_TX(0),
                                   BLADERF_TRIGGER_MINI_EXP_1,
-                                  &trigger);
+                                  &trigger); // Inicializar trigger
     if (status != 0) {
         display_error("Error: Trig Init", bladerf_strerror(status));
         bladerf_close(dev);
@@ -238,7 +241,7 @@ int main(void)
             usleep(DELAY_US);  // Ajustar según el ancho del pulso de trigger
             do {
                 bladerf_trigger_state(dev, &trigger,&is_armed, &fired,&fired_req,NULL, NULL);
-            } while (fired && status == 0);
+            } while ((fired && status == 0)&!stop);
         }
 
     }else{
@@ -264,15 +267,16 @@ int main(void)
         return EXIT_FAILURE;
     }
     
-    display_status("TX Finalizada");usleep(DISPLAY_DELAY); // Reemplaza a printf
+    display_status("TX Finalizada");usleep(DISPLAY_DELAY);
+    printf("Transmisión finalizada.\n");
 
     /*========================= Limpieza final ========================*/
-    bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false);
-    free(waveform);
-    bladerf_close(dev);
+    bladerf_enable_module(dev, BLADERF_CHANNEL_TX(0), false); // Deshabilitar TX
+    free(waveform); // Liberar memoria de waveforms
+    bladerf_close(dev); // Cerrar dispositivo
 
     // Limpieza del LCD
-    lcd_clear();
+    lcd_clear(); 
     display_status("EchoSim");usleep(DISPLAY_DELAY);
     sleep(1);
     close_i2c();

@@ -1,7 +1,7 @@
 #ifndef BLADERF_CONFIG_H
 #define BLADERF_CONFIG_H
 
-#include <libbladeRF.h>
+#include <libbladeRF.h>   // Usada para la API de BladeRF.
 
 //Ajuste one shot o retardo entre transmisiones
 #define DELAY_US 2000  // us
