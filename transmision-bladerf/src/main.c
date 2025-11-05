@@ -1,3 +1,14 @@
+// ============================================================
+// Proyecto: ECHO-SIM
+// Descripción: Sistema para generar y reproducir ecos radar
+//               simulados con una BladeRF (A4/A9).
+//
+// Autores: Luciano Barberon, Juan Monteros, Joaquín Pappano
+// Instituciones: UTN – CONAE
+//
+// Archivo: main.c
+// Fecha: 05/11/2025
+// ============================================================
 #include <stdlib.h>         // Usada para funciones como malloc, calloc, free, EXIT_FAILURE, etc.
 #include <stdbool.h>        // Usada para el tipo `bool`.
 #include <stdint.h>         // Usada para tipos como `int8_t`, `int16_t`.
